@@ -1,0 +1,47 @@
+{
+  "name": "@telemetrydeck/sdk",
+  "version": "0.1.0",
+  "description": "JavaScript package to send TelemetryDeck signals",
+  "main": "dist/telemetrydeck.js",
+  "module": "src/telemetrydeck.js",
+  "scripts": {
+    "build": "rollup -c",
+    "changelog": "lerna-changelog",
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --fix",
+    "release": "release-it",
+    "test": "echo \"Error: no test specified yet\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TelemetryDeck/JavaScriptSDK.git"
+  },
+  "keywords": [
+    "TelemetryDeck",
+    "tracking",
+    "analytics",
+    "sdk"
+  ],
+  "author": "Daniel Jilg <daniel@telemetrydeck.com>",
+  "contributors": [
+    "Florian Pichler <florian.pichler@simplabs.com> (https://florian.pichler.de)"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TelemetryDeck/JavaScriptSDK/issues"
+  },
+  "homepage": "https://github.com/TelemetryDeck/JavaScriptSDK#readme",
+  "devDependencies": {
+    "@rollup/plugin-json": "^4.1.0",
+    "eslint": "^8.6.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-unicorn": "^40.0.0",
+    "lerna-changelog": "^2.2.0",
+    "prettier": "^2.5.1",
+    "release-it": "^14.12.1",
+    "release-it-lerna-changelog": "^4.0.1",
+    "rollup": "^2.63.0",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}
