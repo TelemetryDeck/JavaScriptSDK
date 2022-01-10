@@ -3,7 +3,7 @@ import { terser } from 'rollup-plugin-terser';
 
 export default [
   {
-    input: 'src/telemetrydeck.js',
+    input: 'src/telemetrydeck.mjs',
     output: {
       file: 'dist/telemtrydeck.js',
       format: 'cjs',
@@ -11,7 +11,7 @@ export default [
     plugins: [json()],
   },
   {
-    input: 'src/telemetrydeck.js',
+    input: 'src/telemetrydeck.mjs',
     output: {
       file: 'dist/telemtrydeck.min.js',
       format: 'umd',
