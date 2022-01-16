@@ -1,61 +1,68 @@
 import { version } from '../package.json';
+import sha256 from './utils/sha256.mjs';
+import assertKeyValue from './utils/assert-key-value.mjs';
+import transformPayload from './utils/transform-payload.mjs';
 
-const transformPayload = (payload) => Object.entries(payload).map((entry) => entry.join(':'));
+const APP = 'app';
+const USER = 'user';
+const SIGNAL = 'signal';
 
-const assertKeyValue = (key, value) => {
-  if (!value) {
-    throw new Error(`TelemetryDeck: ${key} is not set`);
-  }
-};
+export class TelemetryDeck {
+  constructor(options = {}) {
+    const { target, app, user } = options;
 
-// https://stackoverflow.com/a/48161723/54547
-async function sha256(message) {
-  // encode as UTF-8
-  const messageBuffer = new TextEncoder().encode(message);
-
-  // hash the message
-  const hashBuffer = await crypto.subtle.digest('SHA-256', messageBuffer);
-
-  // convert ArrayBuffer to Array
-  const hashArray = [...new Uint8Array(hashBuffer)];
-
-  // convert bytes to hex string
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
-}
-
-class TelemetryDeck {
-  constructor(appID, target) {
-    this.appID = appID;
     this.target = target ?? 'https://nom.telemetrydeck.com/v1/';
+    this._app = app;
+    this._user = user;
+  }
 
-    assertKeyValue('appID', appID);
+  async ingest(queue) {
+    for (const [method, data] of queue) {
+      try {
+        await this[method].call(this, data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
+  [APP](appId) {
+    this._app = appId;
+  }
+
+  [USER](identifier) {
+    this._user = identifier;
+  }
+
+  /**
+   * This method is used to queue messages to be sent by TelemtryDeck
+   * @param {string} type
+   * @param {string} [payload]
+   *
+   * @returns {Promise<void>}
+   */
+  push([method, data] = []) {
+    return this[method](data);
   }
 
   /**
    *
-   * @paam {string} userIdentifier to be hashed
    * @param {Object?} payload custom payload to be stored with each signal
    * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
    */
-  async signal(userIdentifier, payload) {
+  async [SIGNAL](payload = {}) {
     const { href: url } = location;
     const { userAgent: useragent, language: locale, userAgentData, vendor } = navigator;
+    const { _app, target } = this;
+    let { _user } = this;
+    let { type } = payload;
 
-    payload = {
-      url,
-      useragent,
-      locale,
-      platform: userAgentData ?? '',
-      vendor,
-      ...payload,
-    };
+    delete payload.type;
 
-    let { appID, target } = this;
+    assertKeyValue(APP, _app);
+    assertKeyValue(USER, _user);
 
-    assertKeyValue('userIdentifier', userIdentifier);
-
-    userIdentifier = await sha256(userIdentifier);
+    _user = await sha256(_user);
 
     return fetch(target, {
       method: 'POST',
@@ -65,16 +72,27 @@ class TelemetryDeck {
       },
       body: JSON.stringify([
         {
-          appID,
-          clientUser: userIdentifier,
-          sessionID: userIdentifier,
+          appID: _app,
+          clientUser: _user,
+          sessionID: _user,
           telemetryClientVersion: version,
-          type: 'pageview',
-          payload: transformPayload(payload),
+          type: type ?? 'pageview',
+          payload: transformPayload({
+            url,
+            useragent,
+            locale,
+            platform: userAgentData ?? '',
+            vendor,
+            ...payload,
+          }),
         },
       ]),
     });
   }
 }
 
-export default TelemetryDeck;
+if (window && window.td) {
+  const td = new TelemetryDeck({});
+  td.ingest(window.td);
+  window.td = td;
+}
