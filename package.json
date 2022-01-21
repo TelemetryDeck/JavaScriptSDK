@@ -9,7 +9,7 @@
     "changelog": "lerna-changelog",
     "lint": "eslint . --cache",
     "lint:fix": "eslint . --fix",
-    "release": "release-it",
+    "release": "dotenv release-it --",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -34,6 +34,7 @@
   "homepage": "https://github.com/TelemetryDeck/JavaScriptSDK#readme",
   "devDependencies": {
     "@rollup/plugin-json": "^4.1.0",
+    "dotenv-cli": "^4.1.1",
     "eslint": "^8.6.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-jest": "^25.3.4",
