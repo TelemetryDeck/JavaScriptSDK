@@ -7,11 +7,12 @@
   "scripts": {
     "build": "rollup -c",
     "changelog": "lerna-changelog",
-    "lint": "eslint . --cache",
     "lint:fix": "eslint . --fix",
+    "lint": "eslint . --cache",
+    "prepublish": "rollup -c",
     "release": "dotenv release-it --",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
