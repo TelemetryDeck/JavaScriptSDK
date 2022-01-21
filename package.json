@@ -1,7 +1,7 @@
 {
   "name": "@telemetrydeck/sdk",
   "version": "1.0.0",
-  "description": "JavaScript package to send TelemetryDeck signals",
+  "description": "Send analytics signals to TelemetryDeck",
   "main": "dist/telemetrydeck.js",
   "module": "dist/telemetrydeck.mjs",
   "scripts": {

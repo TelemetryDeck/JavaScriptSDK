@@ -1,9 +1,15 @@
+.eslintignore
+.eslintrc.js
+.github
 .gitignore
-.pnpm-lock.yaml
 .prettierignore
 .prettierrc.js
 .release-it.js
+jest.config.js
+jest.setup.js
 node_modules
+pnpm-lock.yaml
 RELEASE.md
 rollup.config.js
 src
+tests

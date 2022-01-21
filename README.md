@@ -24,7 +24,7 @@ For websites and to try out the code quickly, you can use [UNPKG](https://unpkg.
 Include the following snippet inside the `<head>` of your HTML page:
 
 ```html
-<script src="https://unpkg.com/@telemtrydeck/sdk/dist/telemetrydeck.min.js" defer></script>
+<script src="https://unpkg.com/@telemetrydeck/sdk/dist/telemetrydeck.min.js" defer></script>
 ```
 
 Then add a second script tag after it like this to send a signal once every time the page loads:

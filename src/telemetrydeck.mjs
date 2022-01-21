@@ -35,7 +35,7 @@ export class TelemetryDeck {
   }
 
   /**
-   * This method is used to queue messages to be sent by TelemtryDeck
+   * This method is used to queue messages to be sent by TelemetryDeck
    * @param {string} type
    * @param {string} [payload]
    *
