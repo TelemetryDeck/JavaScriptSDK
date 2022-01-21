@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "JavaScript package to send TelemetryDeck signals",
   "main": "dist/telemetrydeck.js",
-  "module": "src/telemetrydeck.mjs",
+  "module": "dist/telemetrydeck.mjs",
   "scripts": {
     "build": "rollup -c",
     "changelog": "lerna-changelog",
