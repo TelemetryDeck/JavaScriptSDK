@@ -6,7 +6,7 @@ export default [
   {
     input: 'src/telemetrydeck.mjs',
     output: {
-      file: 'dist/telemtrydeck.js',
+      file: 'dist/telemetrydeck.js',
       format: 'cjs',
     },
     plugins: [json()],
@@ -15,7 +15,7 @@ export default [
   {
     input: 'src/telemetrydeck.mjs',
     output: {
-      file: 'dist/telemtrydeck.mjs',
+      file: 'dist/telemetrydeck.mjs',
       format: 'module',
     },
     plugins: [json()],
@@ -24,7 +24,7 @@ export default [
   {
     input: 'src/telemetrydeck.mjs',
     output: {
-      file: 'dist/telemtrydeck.min.mjs',
+      file: 'dist/telemetrydeck.min.mjs',
       format: 'module',
     },
     plugins: [json(), terser()],
@@ -33,7 +33,7 @@ export default [
   {
     input: 'src/telemetrydeck.mjs',
     output: {
-      file: 'dist/telemtrydeck.min.js',
+      file: 'dist/telemetrydeck.min.js',
       format: 'umd',
       name: '@telemetrydeck/sdk',
     },
