@@ -17,6 +17,10 @@
     "type": "git",
     "url": "git+https://github.com/TelemetryDeck/JavaScriptSDK.git"
   },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "TelemetryDeck",
     "tracking",
