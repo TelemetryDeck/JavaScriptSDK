@@ -1,0 +1,11 @@
+{
+  "include": ["dist/telemetrydeck.js"],
+  "exclude": [],
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "declarationMap": true
+  }
+}
