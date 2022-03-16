@@ -38,15 +38,7 @@ Then add a second script tag after it like this to send a signal once every time
 
 Please replace `YOUR_APP_ID` with the app ID you received from TelemetryDeck, and `USER_IDENTIFIER` with a user identifier. If you have none, consider `anonymous`.
 
-You can add as many signals as you need to track different interactions with your page. Once the page and script are fully loaded, signals will be sent immediatlty.
-
-```js
-// basic signal
-td.push('signal');
-
-// with custom data
-td.push('signal', { route: '/' });
-```
+You can add as many signals as you need to track different interactions with your page. Once the page and script are fully loaded, signals will be sent immediately.
 
 #### Alternative usage for more complex tracking needs
 
