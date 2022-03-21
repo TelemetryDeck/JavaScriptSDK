@@ -67,11 +67,32 @@ You can add as many signals as you need to track different interactions with you
 After installing the package via NPM, use it like this:
 
 ```js
-import { TelemetryDeck } from 'telemetry-deck';
+import { TelemetryDeck } from '@telemetrydeck/sdk';
 
 const td = new TelemetryDeck({ app: YOUR_APP_ID, user: YOUR_USER_IDENTIFIER });
 
-// Process any events that have been qeued up
+// Basic signal
+td.signal();
+
+// Adanced: Signal with custom payload
+td.signal({
+  route: 'some/page/path',
+});
+
+```
+
+Please replace `YOUR_APP_ID` with the app ID you received from TelemetryDeck. If you have any string that identifies your user, such as an email address, use it as `YOUR_USER_IDENTIFIER` – it will be cryptographically anonymized with a hash function.
+
+If you want to pass optional parameters to the signal being sent, add them to the optional payload object.
+
+You can also update your user identifier or queue events like this:
+
+```js
+// Optional: Update app or user identifier
+td.app(YOUR_NEW_APP_ID);
+td.user(YOUR_NEW_USER_IDENTIFIER);
+
+// Optional: Process any events that have been qeued up
 // Queued signals do not contain a client side timestamp and will be timestamped
 // on the server at the time of arrival. Consider adding a timestamp value to
 // your payloads if you need to be able to correlate them.
@@ -82,23 +103,7 @@ const queuedEvents = [
   ['signal', { route: 'some/page/path' }],
 ];
 td.ingest(qeuedEvents);
-
-// Basic signal
-td.signal();
-
-// Update app or user identifier
-td.app(YOUR_NEW_APP_ID);
-td.user(YOUR_NEW_USER_IDENTIFIER);
-
-// Signal with custom payload
-td.signal({
-  route: 'some/page/path',
-});
 ```
-
-Please replace `YOUR_APP_ID` with the app ID you received from TelemetryDeck. If you have any string that identifies your user, such as an email address, use it as `YOUR_USER_IDENTIFIER` – it will be cryptographically anonymized with a hash function.
-
-If you want to pass optional parameters to the signal being sent, add them to the optional payload object.
 
 ## More Info
 
