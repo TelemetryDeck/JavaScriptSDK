@@ -1,6 +1,15 @@
 
 
 
+
+## v1.0.3 (2022-03-21)
+
+#### :bug: Bug Fix
+* [#7](https://github.com/TelemetryDeck/JavaScriptSDK/pull/7) Publish SDK Version with each request ([@winsmith](https://github.com/winsmith))
+
+#### Committers: 1
+- Daniel Jilg ([@winsmith](https://github.com/winsmith))
+
 ## v1.0.2 (2022-03-21)
 
 #### :house: Internal
