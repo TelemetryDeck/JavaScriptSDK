@@ -5,6 +5,9 @@ on:
     tags:
       - '*'
 
+env:
+  PNPM_VERSION: 6.19.0
+
 jobs:
   release:
     name: Release
