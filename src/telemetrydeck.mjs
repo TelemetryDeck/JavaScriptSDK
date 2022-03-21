@@ -75,7 +75,6 @@ export class TelemetryDeck {
           appID: _app,
           clientUser: _user,
           sessionID: _user,
-          telemetryClientVersion: version,
           type: type ?? 'pageview',
           payload: transformPayload({
             url,
@@ -84,6 +83,7 @@ export class TelemetryDeck {
             platform: userAgentData ?? '',
             vendor,
             ...payload,
+            telemetryClientVersion: `JavaScriptSDK ${version}`,
           }),
         },
       ]),
