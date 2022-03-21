@@ -52,7 +52,6 @@ describe('TelemetryDeck.signal()', () => {
           appID: 'foo',
           clientUser: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
           sessionID: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
-          telemetryClientVersion: version,
           type: 'pageview',
           payload: [
             `url:${location.href}`,
@@ -60,6 +59,7 @@ describe('TelemetryDeck.signal()', () => {
             `locale:${navigator.language}`,
             `platform:${navigator.userAgentData ?? ''}`,
             `vendor:${navigator.vendor}`,
+            `telemetryClientVersion:JavaScriptSDK ${version}`,
           ],
         },
       ]),
@@ -84,7 +84,6 @@ describe('TelemetryDeck.signal()', () => {
           appID: 'foo',
           clientUser: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
           sessionID: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
-          telemetryClientVersion: version,
           type: 'pageview',
           payload: [
             `url:${location.href}`,
@@ -92,6 +91,7 @@ describe('TelemetryDeck.signal()', () => {
             `locale:${navigator.language}`,
             `platform:${navigator.userAgentData ?? ''}`,
             `vendor:${navigator.vendor}`,
+            `telemetryClientVersion:JavaScriptSDK ${version}`,
           ],
         },
       ]),
@@ -107,7 +107,6 @@ describe('TelemetryDeck.signal()', () => {
           appID: 'foo',
           clientUser: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
           sessionID: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
-          telemetryClientVersion: version,
           type: 'pageview',
           payload: [
             `url:${location.href}`,
@@ -116,6 +115,7 @@ describe('TelemetryDeck.signal()', () => {
             `platform:${navigator.userAgentData ?? ''}`,
             `vendor:${navigator.vendor}`,
             `baz:bat`,
+            `telemetryClientVersion:JavaScriptSDK ${version}`,
           ],
         },
       ]),
