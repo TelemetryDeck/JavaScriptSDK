@@ -2,6 +2,15 @@
 
 
 
+
+## v1.0.4 (2022-03-23)
+
+#### :bug: Bug Fix
+* [#8](https://github.com/TelemetryDeck/JavaScriptSDK/pull/8) Always attach a TelemetryDeck SDK instance to window ([@pichfl](https://github.com/pichfl))
+
+#### Committers: 1
+- Florian Pichler ([@pichfl](https://github.com/pichfl))
+
 ## v1.0.3 (2022-03-21)
 
 #### :bug: Bug Fix
