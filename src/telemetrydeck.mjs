@@ -1,7 +1,7 @@
 import { version } from '../package.json';
-import sha256 from './utils/sha256.mjs';
-import assertKeyValue from './utils/assert-key-value.mjs';
-import transformPayload from './utils/transform-payload.mjs';
+import { sha256 } from './utils/sha256.mjs';
+import { assertKeyValue } from './utils/assert-key-value.mjs';
+import { transformPayload } from './utils/transform-payload.mjs';
 
 const APP = 'app';
 const USER = 'user';
@@ -91,8 +91,14 @@ export class TelemetryDeck {
   }
 }
 
-if (window && window.td) {
+// Automatically attach a TelemetryDeck instance to the window object once the SDK loads
+if (window) {
   const td = new TelemetryDeck({});
-  td.ingest(window.td);
+
+  // Ingest messages which where pushed to an array on the window object
+  if (window.td) {
+    td.ingest(window.td);
+  }
+
   window.td = td;
 }

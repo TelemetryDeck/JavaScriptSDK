@@ -1,5 +1,5 @@
 // https://stackoverflow.com/a/48161723/54547
-export default async function sha256(message) {
+export async function sha256(message) {
   // encode as UTF-8
   const messageBuffer = new TextEncoder().encode(message);
 
