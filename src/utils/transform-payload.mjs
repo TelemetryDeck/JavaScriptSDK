@@ -1,3 +1,2 @@
-const transformPayload = (payload) => Object.entries(payload).map((entry) => entry.join(':'));
-
-export default transformPayload;
+export const transformPayload = (payload) =>
+  Object.entries(payload).map((entry) => entry.join(':'));

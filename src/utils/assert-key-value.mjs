@@ -1,7 +1,5 @@
-const assertKeyValue = (key, value) => {
+export const assertKeyValue = (key, value) => {
   if (!value) {
     throw new Error(`TelemetryDeck: "${key}" is not set`);
   }
 };
-
-export default assertKeyValue;
