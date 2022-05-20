@@ -13,3 +13,4 @@ RELEASE.md
 rollup.config.js
 src
 tests
+.env
