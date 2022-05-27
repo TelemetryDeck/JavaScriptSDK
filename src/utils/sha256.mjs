@@ -1,5 +1,9 @@
 // https://stackoverflow.com/a/48161723/54547
 export async function sha256(message) {
+  if (!crypto) {
+    throw new Error('Cryptography API unavailable. Please use HTTPS.');
+  }
+
   // encode as UTF-8
   const messageBuffer = new TextEncoder().encode(message);
 
