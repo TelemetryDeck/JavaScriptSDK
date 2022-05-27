@@ -3,6 +3,15 @@
 
 
 
+
+## v1.0.5 (2022-05-27)
+
+#### :rocket: Enhancement
+* [#10](https://github.com/TelemetryDeck/JavaScriptSDK/pull/10) Improve error message when crypto is not available ([@winsmith](https://github.com/winsmith))
+
+#### Committers: 1
+- Daniel Jilg ([@winsmith](https://github.com/winsmith))
+
 ## v1.0.4 (2022-03-23)
 
 #### :bug: Bug Fix
