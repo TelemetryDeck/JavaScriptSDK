@@ -71,6 +71,39 @@ describe('TelemetryDeck.signal()', () => {
     });
   });
 
+  test('sends signal to TelemetryDeck after TD was loaded', async () => {
+    window.location.href = 'https://nasa.gov';
+
+    const spy = jest.spyOn(window, 'fetch');
+    const td = new TelemetryDeck();
+    await td.push(['app', 'foo'], ['user', 'bar'], ['signal']);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith('https://nom.telemetrydeck.com/v1/', {
+      body: JSON.stringify([
+        {
+          appID: 'foo',
+          clientUser: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
+          sessionID: 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9',
+          type: 'pageview',
+          payload: [
+            `url:${location.href}`,
+            `useragent:${navigator.userAgent}`,
+            `locale:${navigator.language}`,
+            `platform:${navigator.userAgentData ?? ''}`,
+            `vendor:${navigator.vendor}`,
+            `telemetryClientVersion:JavaScriptSDK ${version}`,
+          ],
+        },
+      ]),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      mode: 'cors',
+    });
+  });
+
   test('sends signals to TelemetryDeck with additional payload data', async () => {
     const spy = jest.spyOn(window, 'fetch');
     const queue = [['app', 'foo'], ['user', 'bar'], ['signal'], ['signal', { baz: 'bat' }]];

@@ -41,8 +41,8 @@ export class TelemetryDeck {
    *
    * @returns {Promise<void>}
    */
-  push([method, data] = []) {
-    return this[method](data);
+  push() {
+    return this.ingest(Array.from(arguments));
   }
 
   /**
