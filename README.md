@@ -123,4 +123,4 @@ You can optionally attach an object with string values to the signal. This will 
 
 ### 📚 Full Docs
 
-Go to [docs.telemetrydeck.com](https://docs.telemetrydeck.com) to see all documentation articles
+Go to [telemetrydeck.com/docs](https://telemetrydeck.com/docs) to see all documentation articles
