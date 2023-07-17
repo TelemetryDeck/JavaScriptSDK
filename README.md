@@ -17,66 +17,21 @@ Test Mode is currently not supported.
 
 ## Usage
 
-### 📄 Usage via Script tag
-
-For websites and to try out the code quickly, you can use [UNPKG](https://unpkg.com), a free CDN which allows you to load files from any npm package.
-
-Include the following snippet inside the `<head>` of your HTML page:
-
-```html
-<script src="https://unpkg.com/@telemetrydeck/sdk/dist/telemetrydeck.min.js" defer></script>
-```
-
-Then add a second script tag after it like this to send a signal once every time the page loads:
-
-```html
-<script>
-  window.td = window.td || [];
-  td.push(['app', YOUR_APP_ID], ['user', USER_IDENTIFIER], ['signal']);
-</script>
-```
-
-Please replace `YOUR_APP_ID` with the app ID you received from TelemetryDeck, and `USER_IDENTIFIER` with a user identifier. If you have none, consider `anonymous`.
-
-You can add as many signals as you need to track different interactions with your page. Once the page and script are fully loaded, signals will be sent immediately.
-
-#### Alternative usage for more complex tracking needs
-
-```html
-<script>
-  // Required: queue setup
-  td = window.td || [];
-  // Required: Set your application id
-  td.push(['app', YOUR_APP_ID]);
-  // Required: Set a user idenfitier. `anonymous` is a recommended default
-  td.push(['user', USER_IDENTIFIER ?? 'anonymous']);
-
-  // Custom payload sent with the signal
-  td.push(['signal']);
-  td.push([
-    'signal',
-    {
-      route: 'some/page/path',
-    },
-  ]);
-</script>
-```
-
 ### 📦 Advanced usage for applications that use a bundler (like Webpack, Rollup, …)
 
 After installing the package via NPM, use it like this:
 
 ```js
-import { TelemetryDeck } from '@telemetrydeck/sdk';
+import TelemetryDeck from '@telemetrydeck/sdk';
 
-const td = new TelemetryDeck({ app: YOUR_APP_ID, user: YOUR_USER_IDENTIFIER });
+const td = new TelemetryDeck({ appID: YOUR_APP_ID, user: YOUR_USER_IDENTIFIER });
 
 // Basic signal
-td.signal();
+td.signal('<SIGNAL_TYPE>');
 
 // Adanced: Signal with custom payload
-td.signal({
-  route: 'some/page/path',
+td.signal('<SIGNAL_TYPE>',{
+  volume: '11',
 });
 
 ```
@@ -84,26 +39,6 @@ td.signal({
 Please replace `YOUR_APP_ID` with the app ID you received from TelemetryDeck. If you have any string that identifies your user, such as an email address, use it as `YOUR_USER_IDENTIFIER` – it will be cryptographically anonymized with a hash function.
 
 If you want to pass optional parameters to the signal being sent, add them to the optional payload object.
-
-You can also update your user identifier or queue events like this:
-
-```js
-// Optional: Update app or user identifier
-td.app(YOUR_NEW_APP_ID);
-td.user(YOUR_NEW_USER_IDENTIFIER);
-
-// Optional: Process any events that have been qeued up
-// Queued signals do not contain a client side timestamp and will be timestamped
-// on the server at the time of arrival. Consider adding a timestamp value to
-// your payloads if you need to be able to correlate them.
-const queuedEvents = [
-  ['app', YOUR_APP_ID],
-  ['user', YOUR_USER_IDENTIFIER],
-  ['signal'],
-  ['signal', { route: 'some/page/path' }],
-];
-td.ingest(qeuedEvents);
-```
 
 ## More Info
 
