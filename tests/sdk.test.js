@@ -30,18 +30,18 @@ test.serial("Can't instantiate without appID", (t) => {
   );
 });
 
-test.serial('Can pass optional user, target and enabled flag', (t) => {
+test.serial('Can pass optional user, target and testMode flag', (t) => {
   const td = new TelemetryDeck({
     appID: 'foo',
     user: 'bar',
     target: 'https://example.com',
-    isEnabled: false,
+    testMode: false,
   });
 
   t.is(td.appID, 'foo');
   t.is(td.user, 'bar');
   t.is(td.target, 'https://example.com');
-  t.is(td.isEnabled, false);
+  t.is(td.testMode, false);
 });
 
 test.serial('Can send a signal', async (t) => {
@@ -66,6 +66,7 @@ test.serial('Can send a signal', async (t) => {
         clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
         sessionID: '255s0',
         appID: 'foo',
+        type: 'test',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
         payload: {},
       },
@@ -114,6 +115,7 @@ test.serial('Can send additional payload attributes', async (t) => {
         clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
         sessionID: '255s0',
         appID: 'foo',
+        type: 'test',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
         payload: {
           foo: 'bar',
@@ -147,6 +149,7 @@ test.serial('Can send a signal with salty user', async (t) => {
         clientUser: '85ffa7bff7a597cf138a5195efaeb5ddc4df87392eaaf32b670e3173305351b5',
         sessionID: '255s0',
         appID: 'foo',
+        type: 'test',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
         payload: {},
       },
@@ -177,6 +180,82 @@ test.serial('Can send a signal with sessionID', async (t) => {
         clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
         sessionID: '1234567890',
         appID: 'foo',
+        type: 'test',
+        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
+        payload: {},
+      },
+    ])
+  );
+});
+
+test.serial('Can queue signals and send them later', async (t) => {
+  const { fake } = t.context;
+
+  const td = new TelemetryDeck({
+    appID: 'foo',
+    user: 'anonymous',
+    sessionID: '1234567890',
+  });
+
+  await td.queue('foo');
+  await td.queue('bar');
+
+  t.deepEqual(td.store.values, [
+    {
+      appID: 'foo',
+      clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
+      payload: {},
+      sessionID: '1234567890',
+      telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
+      type: 'foo',
+    },
+    {
+      appID: 'foo',
+      clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
+      payload: {},
+      sessionID: '1234567890',
+      telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
+      type: 'bar',
+    },
+  ]);
+
+  const response = await td.signal('test');
+  await td.flush();
+
+  t.is(await response.text(), 'OK LOL');
+  t.is(fake.callCount, 2);
+  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
+  t.is(fake.firstCall.args[1].method, 'POST');
+  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
+  t.is(
+    fake.firstCall.args[1].body,
+    JSON.stringify([
+      {
+        clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
+        sessionID: '1234567890',
+        appID: 'foo',
+        type: 'test',
+        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
+        payload: {},
+      },
+    ])
+  );
+  t.is(
+    fake.secondCall.args[1].body,
+    JSON.stringify([
+      {
+        clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
+        sessionID: '1234567890',
+        appID: 'foo',
+        type: 'foo',
+        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
+        payload: {},
+      },
+      {
+        clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
+        sessionID: '1234567890',
+        appID: 'foo',
+        type: 'bar',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
         payload: {},
       },

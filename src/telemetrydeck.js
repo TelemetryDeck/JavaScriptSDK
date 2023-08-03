@@ -1,4 +1,6 @@
+import { randomString } from './utils/random-string.js';
 import { sha256 } from './utils/sha256.js';
+import { TimelineStore } from './utils/store.js';
 import { version } from './utils/version.js';
 
 /**
@@ -16,26 +18,29 @@ export default class TelemetryDeck {
   user = '';
   salt = '';
   target = 'https://nom.telemetrydeck.com/v2/';
-  isEnabled = true;
+  testMode = false;
+
+  #queueMonotone = 0;
 
   /**
    *
    * @param {TelemetryDeckOptions} options
    */
   constructor(options = {}) {
-    const { target, appID, user, isEnabled, sessionID, salt } = options;
+    const { target, appID, user, sessionID, salt, testMode, store } = options;
 
     if (!appID) {
       throw new Error('appID is required');
     }
 
+    this.store = store ?? new TimelineStore();
+
     this.target = target ?? this.target;
     this.appID = appID;
     this.user = user;
-    this.isEnabled = isEnabled ?? this.isEnabled;
-    // Math.random is not cryptographically secure, but it's good enough for our purposes – the session ID needs to be unique enough in combination with the user ID
-    this.sessionID = sessionID ?? (0 | (Math.random() * 9e6)).toString(36);
+    this.sessionID = sessionID ?? randomString();
     this.salt = salt;
+    this.testMode = testMode ?? this.testMode;
   }
 
   /**
@@ -45,10 +50,32 @@ export default class TelemetryDeck {
    * @param {TelemetryDeckOptions} options
    * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
    */
-  async signal(type, payload = {}, options = {}) {
-    const { appID, target, salt } = this;
+  async signal(type, payload, options) {
+    const body = await this.#build(type, payload, options);
+
+    return this.#post([body]);
+  }
+
+  async queue(type, payload, options) {
+    const bodyPromise = this.#build(type, payload, options);
+
+    return this.store.push(bodyPromise);
+  }
+
+  async flush() {
+    const flushPromise = this.#post(this.store.values);
+
+    this.store.clear();
+    this.#queueMonotone = 0;
+
+    return flushPromise;
+  }
+
+  async #build(type, payload, options) {
+    const { appID, salt, testMode } = this;
     let { user, sessionID } = this;
 
+    options = options ?? {};
     user = options.user ?? user;
     sessionID = options.sessionID ?? sessionID;
 
@@ -66,21 +93,47 @@ export default class TelemetryDeck {
 
     user = await sha256([user, salt].join(''));
 
+    const body = {
+      clientUser: user,
+      sessionID,
+      appID,
+      type,
+      telemetryClientVersion: `JavaScriptSDK ${version}`,
+    };
+
+    if (testMode) {
+      body.isTestMode = true;
+    }
+
+    body.payload = {};
+
+    for (const [key, value] of Object.entries(payload ?? {})) {
+      if (key === 'floatValue') {
+        body.payload[key] = Number.parseFloat(value);
+      } else if (value instanceof Date) {
+        body.payload[key] = value.toISOString();
+      } else if (typeof value === 'string') {
+        body.payload[key] = value;
+      } else if (typeof value === 'object') {
+        body.payload[key] = JSON.stringify(value);
+      } else {
+        body.payload[key] = `${value}`;
+      }
+    }
+
+    return body;
+  }
+
+  #post(body) {
+    const { target } = this;
+
     return fetch(target, {
       method: 'POST',
       mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify([
-        {
-          clientUser: user,
-          sessionID,
-          appID,
-          telemetryClientVersion: `JavaScriptSDK ${version}`,
-          payload,
-        },
-      ]),
+      body: JSON.stringify(body),
     });
   }
 }
