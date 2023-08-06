@@ -75,7 +75,7 @@ Values will be stringified through `JSON.stringify()`, with few exceptions:
 - Strings are passed as is (this prevents the JSON stringification of strings, which would add quotes around the string)
 - `floatValue` is the only key in the payload that may hold a float value. Any value passed to this will be converted to a float using `Number.parseFloat()`.
 
-#### Payload recommendations for Web Apps
+#### Payload Recommendations for Web Apps
 
 In most web apps you probably want to see a few default values which you can read from the browser. We recommend sending the following values in your custom payload:
 

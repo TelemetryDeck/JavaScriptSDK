@@ -69,7 +69,6 @@ test.serial('Can send a signal', async (t) => {
         appID: 'foo',
         type: 'test',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        payload: {},
       },
     ])
   );
@@ -152,7 +151,6 @@ test.serial('Can send a signal with salty user', async (t) => {
         appID: 'foo',
         type: 'test',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        payload: {},
       },
     ])
   );
@@ -183,7 +181,6 @@ test.serial('Can send a signal with sessionID', async (t) => {
         appID: 'foo',
         type: 'test',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        payload: {},
       },
     ])
   );
@@ -209,7 +206,6 @@ test.serial('Can queue signals and send them later', async (t) => {
     {
       appID: 'foo',
       clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
-      payload: {},
       receivedAt: now.toISOString(),
       sessionID: '1234567890',
       telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
@@ -218,7 +214,6 @@ test.serial('Can queue signals and send them later', async (t) => {
     {
       appID: 'foo',
       clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
-      payload: {},
       receivedAt: now.toISOString(),
       sessionID: '1234567890',
       telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
@@ -243,7 +238,6 @@ test.serial('Can queue signals and send them later', async (t) => {
         appID: 'foo',
         type: 'test',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        payload: {},
       },
     ])
   );
@@ -257,7 +251,6 @@ test.serial('Can queue signals and send them later', async (t) => {
         type: 'foo',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
         receivedAt: now.toISOString(),
-        payload: {},
       },
       {
         clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
@@ -266,10 +259,54 @@ test.serial('Can queue signals and send them later', async (t) => {
         type: 'bar',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
         receivedAt: now.toISOString(),
-        payload: {},
       },
     ])
   );
 
   clock.uninstall();
+});
+
+test.serial('Can build signal payloads', async (t) => {
+  const { fake } = t.context;
+
+  const td = new TelemetryDeck({
+    appID: 'foo',
+    user: 'anonymous',
+    sessionID: '1234567890',
+  });
+
+  const response = await td.signal('test', {
+    floatValue: '0.4',
+    dateValue: new Date('2021-01-01T00:00:00.000Z'),
+    stringValue: 'foo',
+    objectValue: { foo: 'bar' },
+    numberValue: 42,
+    arrayValue: ['foo', 'bar'],
+  });
+
+  t.is(await response.text(), 'OK LOL');
+  t.is(fake.callCount, 1);
+  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
+  t.is(fake.firstCall.args[1].method, 'POST');
+  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
+  t.is(
+    fake.firstCall.args[1].body,
+    JSON.stringify([
+      {
+        clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
+        sessionID: '1234567890',
+        appID: 'foo',
+        type: 'test',
+        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
+        payload: {
+          floatValue: 0.4,
+          dateValue: '2021-01-01T00:00:00.000Z',
+          stringValue: 'foo',
+          objectValue: '{"foo":"bar"}',
+          numberValue: '42',
+          arrayValue: '["foo","bar"]',
+        },
+      },
+    ])
+  );
 });

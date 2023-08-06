@@ -117,6 +117,14 @@ export default class TelemetryDeck {
 
     if (testMode) {
       body.isTestMode = true;
+    } 
+
+    return this.#appendPayload(body, payload);
+  }
+
+  #appendPayload(body, payload) {
+    if (!payload || typeof payload !== 'object' || Object.keys(payload).length === 0) {
+      return body;
     }
 
     body.payload = {};
