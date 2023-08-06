@@ -53,7 +53,7 @@ export class Store {
 }
 ```
 
-The default implementation can be found in `src/utils/store.js` and uses a monotone counter to keep track of the order of signals. 
+The default implementation can be found in `src/utils/store.js` and uses a monotone counter to keep track of the order of signals.
 
 ### 📱 You need an App ID
 
@@ -94,9 +94,13 @@ You can enable test mode by setting `testMode` to `true` on your `TelemetryDeck`
 
 ```javascript
 td.testMode = true;
-td.signal('navigation', { /* ... */ }); // send with testMode enabled
+td.signal('navigation', {
+  /* ... */
+}); // send with testMode enabled
 td.testMode = false;
-td.signal('navigation', { /* ... */ }); // send with testMode disabled
+td.signal('navigation', {
+  /* ... */
+}); // send with testMode disabled
 ```
 
 ### 📚 Full Docs

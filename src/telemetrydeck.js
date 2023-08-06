@@ -117,7 +117,7 @@ export default class TelemetryDeck {
 
     if (testMode) {
       body.isTestMode = true;
-    } 
+    }
 
     return this.#appendPayload(body, payload);
   }
