@@ -8,3 +8,8 @@
 /coverage/
 !.*
 .eslintcache
+
+/package.json
+/pnpm-lock.yaml
+
+/CHANGELOG.md
