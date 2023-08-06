@@ -41,12 +41,12 @@ React Native does not support the `crypto` module, which is required for the SDK
 
 ## Queueing Signals
 
-The `TelemetryDeck` class comes with a built-in queuing mechanism for storing signals until they are flushed in a single request. 
+The `TelemetryDeck` class comes with a built-in queuing mechanism for storing signals until they are flushed in a single request. Queued signals are sent with `receivedAt` prefilled with the time they were queued.
 
-This uses an in-memory store. The store is not persisted between page reloads or app restarts. If you want to persist the store, you can pass a `store` object to the `TelemetryDeck` constructor. The store must implement the following interface:
+This uses an in-memory store by default. The store is not persisted between page reloads or app restarts. If you want to persist the store, you can pass a `store` object to the `TelemetryDeck` constructor. The store must implement the following interface:
 
 ```javascript
-export class TimelineStore {
+export class Store {
   async push() // signal bodys are async and need to be awaited before stored
   clear() // called after flush
   values() // returns an array of resolved signal bodys in the order they were pushed

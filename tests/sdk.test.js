@@ -1,5 +1,6 @@
 import test from 'ava';
 import sinon from 'sinon';
+import FakeTimers from '@sinonjs/fake-timers';
 
 import TelemetryDeck from '../src/telemetrydeck.js';
 
@@ -189,6 +190,10 @@ test.serial('Can send a signal with sessionID', async (t) => {
 });
 
 test.serial('Can queue signals and send them later', async (t) => {
+  const clock = FakeTimers.install({
+    advanceTimeDelta: 10,
+  });
+  const now = new Date();
   const { fake } = t.context;
 
   const td = new TelemetryDeck({
@@ -200,11 +205,12 @@ test.serial('Can queue signals and send them later', async (t) => {
   await td.queue('foo');
   await td.queue('bar');
 
-  t.deepEqual(td.store.values, [
+  t.deepEqual(td.store.values(), [
     {
       appID: 'foo',
       clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
       payload: {},
+      receivedAt: now.toISOString(),
       sessionID: '1234567890',
       telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
       type: 'foo',
@@ -213,6 +219,7 @@ test.serial('Can queue signals and send them later', async (t) => {
       appID: 'foo',
       clientUser: '2f183a4e64493af3f377f745eda502363cd3e7ef6e4d266d444758de0a85fcc8',
       payload: {},
+      receivedAt: now.toISOString(),
       sessionID: '1234567890',
       telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
       type: 'bar',
@@ -249,6 +256,7 @@ test.serial('Can queue signals and send them later', async (t) => {
         appID: 'foo',
         type: 'foo',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
+        receivedAt: now.toISOString(),
         payload: {},
       },
       {
@@ -257,8 +265,11 @@ test.serial('Can queue signals and send them later', async (t) => {
         appID: 'foo',
         type: 'bar',
         telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
+        receivedAt: now.toISOString(),
         payload: {},
       },
     ])
   );
+
+  clock.uninstall();
 });

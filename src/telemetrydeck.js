@@ -1,6 +1,6 @@
 import { randomString } from './utils/random-string.js';
 import { sha256 } from './utils/sha256.js';
-import { TimelineStore } from './utils/store.js';
+import { Store } from './utils/store.js';
 import { version } from './utils/version.js';
 
 /**
@@ -11,6 +11,8 @@ import { version } from './utils/version.js';
  * @property {string} [target] the target URL to send telemetry data to
  * @property {string} [sessionID]
  * @property {string} [salt]
+ * @property {boolean} [testMode]
+ * @property {Store} [store]
  */
 
 export default class TelemetryDeck {
@@ -19,8 +21,6 @@ export default class TelemetryDeck {
   salt = '';
   target = 'https://nom.telemetrydeck.com/v2/';
   testMode = false;
-
-  #queueMonotone = 0;
 
   /**
    *
@@ -33,8 +33,7 @@ export default class TelemetryDeck {
       throw new Error('appID is required');
     }
 
-    this.store = store ?? new TimelineStore();
-
+    this.store = store ?? new Store();
     this.target = target ?? this.target;
     this.appID = appID;
     this.user = user;
@@ -46,8 +45,8 @@ export default class TelemetryDeck {
   /**
    *
    * @param {string} type the type of telemetry data to send
-   * @param {TelemetryDeckPayload?} payload custom payload to be stored with each signal
-   * @param {TelemetryDeckOptions} options
+   * @param {TelemetryDeckPayload} [payload] custom payload to be stored with each signal
+   * @param {TelemetryDeckOptions} [options]
    * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
    */
   async signal(type, payload, options) {
@@ -56,22 +55,33 @@ export default class TelemetryDeck {
     return this.#post([body]);
   }
 
+  /**
+   *
+   * @param {string} type
+   * @param {TelemetryDeckPayload} [payload]
+   * @param {TelemetryDeckOptions} [options]
+   * @returns <Promise>
+   */
   async queue(type, payload, options) {
-    const bodyPromise = this.#build(type, payload, options);
+    const receivedAt = new Date().toISOString();
+    const bodyPromise = this.#build(type, payload, options, receivedAt);
 
     return this.store.push(bodyPromise);
   }
 
+  /**
+   *
+   * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
+   */
   async flush() {
-    const flushPromise = this.#post(this.store.values);
+    const flushPromise = this.#post(this.store.values());
 
     this.store.clear();
-    this.#queueMonotone = 0;
 
     return flushPromise;
   }
 
-  async #build(type, payload, options) {
+  async #build(type, payload, options, receivedAt) {
     const { appID, salt, testMode } = this;
     let { user, sessionID } = this;
 
@@ -100,6 +110,10 @@ export default class TelemetryDeck {
       type,
       telemetryClientVersion: `JavaScriptSDK ${version}`,
     };
+
+    if (receivedAt) {
+      body.receivedAt = receivedAt;
+    }
 
     if (testMode) {
       body.isTestMode = true;

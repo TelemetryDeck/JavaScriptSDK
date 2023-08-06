@@ -1,19 +1,16 @@
-export class TimelineStore {
-  #data = new Map();
-  #monotone = 0;
+export class Store {
+  #data = [];
 
   async push(value) {
-    const key = this.#monotone;
-    this.#monotone += 1;
-    this.#data.set(key, await value);
+    value = await value;
+    this.#data.push(value);
   }
 
   clear() {
-    this.#data.clear();
-    this.#monotone = 0;
+    this.#data = [];
   }
 
-  get values() {
-    return [...this.#data.entries()].sort().map(([, value]) => value);
+  values() {
+    return this.#data;
   }
 }
