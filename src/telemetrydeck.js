@@ -7,7 +7,7 @@ import { version } from './utils/version.js';
  * @typedef {Object} TelemetryDeckOptions
  *
  * @property {string} appID the app ID to send telemetry data to
- * @property {string} user the user ID to send telemetry data to
+ * @property {string} clientUser the clientUser ID to send telemetry data to
  * @property {string} [target] the target URL to send telemetry data to
  * @property {string} [sessionID]
  * @property {string} [salt]
@@ -17,7 +17,7 @@ import { version } from './utils/version.js';
 
 export default class TelemetryDeck {
   appID = '';
-  user = '';
+  clientUser = '';
   salt = '';
   target = 'https://nom.telemetrydeck.com/v2/';
   testMode = false;
@@ -27,7 +27,7 @@ export default class TelemetryDeck {
    * @param {TelemetryDeckOptions} options
    */
   constructor(options = {}) {
-    const { target, appID, user, sessionID, salt, testMode, store } = options;
+    const { target, appID, clientUser, sessionID, salt, testMode, store } = options;
 
     if (!appID) {
       throw new Error('appID is required');
@@ -36,7 +36,7 @@ export default class TelemetryDeck {
     this.store = store ?? new Store();
     this.target = target ?? this.target;
     this.appID = appID;
-    this.user = user;
+    this.clientUser = clientUser;
     this.sessionID = sessionID ?? randomString();
     this.salt = salt;
     this.testMode = testMode ?? this.testMode;
@@ -83,10 +83,10 @@ export default class TelemetryDeck {
 
   async _build(type, payload, options, receivedAt) {
     const { appID, salt, testMode } = this;
-    let { user, sessionID } = this;
+    let { clientUser, sessionID } = this;
 
     options = options ?? {};
-    user = options.user ?? user;
+    clientUser = options.clientUser ?? clientUser;
     sessionID = options.sessionID ?? sessionID;
 
     if (!type) {
@@ -97,14 +97,14 @@ export default class TelemetryDeck {
       throw new Error(`TelemetryDeck: "appID" is not set`);
     }
 
-    if (!user) {
-      throw new Error(`TelemetryDeck: "user" is not set`);
+    if (!clientUser) {
+      throw new Error(`TelemetryDeck: "clientUser" is not set`);
     }
 
-    user = await sha256([user, salt].join(''));
+    clientUser = await sha256([clientUser, salt].join(''));
 
     const body = {
-      clientUser: user,
+      clientUser,
       sessionID,
       appID,
       type,

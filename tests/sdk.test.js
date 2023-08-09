@@ -34,13 +34,13 @@ test.serial("Can't instantiate without appID", (t) => {
 test.serial('Can pass optional user, target and testMode flag', (t) => {
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'bar',
+    clientUser: 'bar',
     target: 'https://example.com',
     testMode: false,
   });
 
   t.is(td.appID, 'foo');
-  t.is(td.user, 'bar');
+  t.is(td.clientUser, 'bar');
   t.is(td.target, 'https://example.com');
   t.is(td.testMode, false);
 });
@@ -50,7 +50,7 @@ test.serial('Can send a signal', async (t) => {
 
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'anonymous',
+    clientUser: 'anonymous',
   });
 
   const response = await td.signal('test');
@@ -77,7 +77,7 @@ test.serial('Can send a signal', async (t) => {
 test.serial("Can't send a signal without a type", async (t) => {
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'anonymous',
+    clientUser: 'anonymous',
   });
 
   await t.throwsAsync(
@@ -93,7 +93,7 @@ test.serial('Can send additional payload attributes', async (t) => {
 
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'anonymous',
+    clientUser: 'anonymous',
   });
 
   const response = await td.signal('test', {
@@ -131,7 +131,7 @@ test.serial('Can send a signal with salty user', async (t) => {
 
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'anonymous',
+    clientUser: 'anonymous',
     salt: 'salty',
   });
 
@@ -161,7 +161,7 @@ test.serial('Can send a signal with sessionID', async (t) => {
 
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'anonymous',
+    clientUser: 'anonymous',
     sessionID: '1234567890',
   });
 
@@ -195,7 +195,7 @@ test.serial('Can queue signals and send them later', async (t) => {
 
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'anonymous',
+    clientUser: 'anonymous',
     sessionID: '1234567890',
   });
 
@@ -271,7 +271,7 @@ test.serial('Can build signal payloads', async (t) => {
 
   const td = new TelemetryDeck({
     appID: 'foo',
-    user: 'anonymous',
+    clientUser: 'anonymous',
     sessionID: '1234567890',
   });
 
