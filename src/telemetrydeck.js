@@ -50,9 +50,9 @@ export default class TelemetryDeck {
    * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
    */
   async signal(type, payload, options) {
-    const body = await this.#build(type, payload, options);
+    const body = await this._build(type, payload, options);
 
-    return this.#post([body]);
+    return this._post([body]);
   }
 
   /**
@@ -64,7 +64,7 @@ export default class TelemetryDeck {
    */
   async queue(type, payload, options) {
     const receivedAt = new Date().toISOString();
-    const bodyPromise = this.#build(type, payload, options, receivedAt);
+    const bodyPromise = this._build(type, payload, options, receivedAt);
 
     return this.store.push(bodyPromise);
   }
@@ -74,14 +74,14 @@ export default class TelemetryDeck {
    * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
    */
   async flush() {
-    const flushPromise = this.#post(this.store.values());
+    const flushPromise = this._post(this.store.values());
 
     this.store.clear();
 
     return flushPromise;
   }
 
-  async #build(type, payload, options, receivedAt) {
+  async _build(type, payload, options, receivedAt) {
     const { appID, salt, testMode } = this;
     let { user, sessionID } = this;
 
@@ -119,10 +119,10 @@ export default class TelemetryDeck {
       body.isTestMode = true;
     }
 
-    return this.#appendPayload(body, payload);
+    return this._appendPayload(body, payload);
   }
 
-  #appendPayload(body, payload) {
+  _appendPayload(body, payload) {
     if (!payload || typeof payload !== 'object' || Object.keys(payload).length === 0) {
       return body;
     }
@@ -146,7 +146,7 @@ export default class TelemetryDeck {
     return body;
   }
 
-  #post(body) {
+  _post(body) {
     const { target } = this;
 
     return fetch(target, {
