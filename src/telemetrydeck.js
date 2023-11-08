@@ -9,10 +9,11 @@ import { version } from './utils/version.js';
  * @property {string} appID the app ID to send telemetry data to
  * @property {string} clientUser the clientUser ID to send telemetry data to
  * @property {string} [target] the target URL to send telemetry data to
- * @property {string} [sessionID]
- * @property {string} [salt]
- * @property {boolean} [testMode]
- * @property {Store} [store]
+ * @property {string} [sessionID] An optional session ID to include in each signal
+ * @property {string} [salt] A salt to use when hashing the clientUser ID
+ * @property {boolean} [testMode] If "true", signals will be marked as test signals and only show up in Test Mode in the Dashbaord
+ * @property {Store} [store] A store to use for queueing signals
+ * @property {Function} [cryptoDigest] A function to use for calculating the SHA-256 hash of the clientUser ID. Null to use the browser's built-in crypto.subtle.digest function.
  */
 
 export default class TelemetryDeck {
@@ -27,7 +28,7 @@ export default class TelemetryDeck {
    * @param {TelemetryDeckOptions} options
    */
   constructor(options = {}) {
-    const { target, appID, clientUser, sessionID, salt, testMode, store } = options;
+    const { target, appID, clientUser, sessionID, salt, testMode, store, cryptoDigest } = options;
 
     if (!appID) {
       throw new Error('appID is required');
@@ -40,9 +41,11 @@ export default class TelemetryDeck {
     this.sessionID = sessionID ?? randomString();
     this.salt = salt;
     this.testMode = testMode ?? this.testMode;
+    this.cryptoDigest = cryptoDigest;
   }
 
   /**
+   * Send a TelemetryDeck signal
    *
    * @param {string} type the type of telemetry data to send
    * @param {TelemetryDeckPayload} [payload] custom payload to be stored with each signal
@@ -56,6 +59,9 @@ export default class TelemetryDeck {
   }
 
   /**
+   * Enqueue a signal to be sent to TelemetryDeck later.
+   *
+   * Use flush() to send all queued signals.
    *
    * @param {string} type
    * @param {TelemetryDeckPayload} [payload]
@@ -70,6 +76,9 @@ export default class TelemetryDeck {
   }
 
   /**
+   * Send all queued signals to TelemetryDeck.
+   *
+   * Enqueue signals with queue().
    *
    * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
    */
@@ -81,8 +90,23 @@ export default class TelemetryDeck {
     return flushPromise;
   }
 
+  _clientUser = '';
+  _clientUserHashed = '';
+
+  async _hashedClientUser(clientUser) {
+    if (clientUser !== this._clientUser) {
+      this._clientUserHashed = await sha256(
+        [this.clientUser, this.salt].join(''),
+        this.cryptoDigest
+      );
+      this._clientUser = this.clientUser;
+    }
+
+    return this._clientUserHashed;
+  }
+
   async _build(type, payload, options, receivedAt) {
-    const { appID, salt, testMode } = this;
+    const { appID, testMode } = this;
     let { clientUser, sessionID } = this;
 
     options = options ?? {};
@@ -101,7 +125,7 @@ export default class TelemetryDeck {
       throw new Error(`TelemetryDeck: "clientUser" is not set`);
     }
 
-    clientUser = await sha256([clientUser, salt].join(''));
+    clientUser = await this._hashedClientUser(clientUser);
 
     const body = {
       clientUser,
