@@ -13,7 +13,7 @@ import { version } from './utils/version.js';
  * @property {string} [salt] A salt to use when hashing the clientUser ID
  * @property {boolean} [testMode] If "true", signals will be marked as test signals and only show up in Test Mode in the Dashbaord
  * @property {Store} [store] A store to use for queueing signals
- * @property {Function} [cryptoDigest] A function to use for calculating the SHA-256 hash of the clientUser ID. Null to use the browser's built-in crypto.subtle.digest function.
+ * @property {Function} [subtleCrypto] Used for providing an alternative implementation of SubtleCrypto where no browser is available. Expects a class providing a `.digest(method, value)` method.
  */
 
 export default class TelemetryDeck {
@@ -28,7 +28,7 @@ export default class TelemetryDeck {
    * @param {TelemetryDeckOptions} options
    */
   constructor(options = {}) {
-    const { target, appID, clientUser, sessionID, salt, testMode, store, cryptoDigest } = options;
+    const { target, appID, clientUser, sessionID, salt, testMode, store, subtleCrypto } = options;
 
     if (!appID) {
       throw new Error('appID is required');
@@ -41,7 +41,7 @@ export default class TelemetryDeck {
     this.sessionID = sessionID ?? randomString();
     this.salt = salt ?? this.salt;
     this.testMode = testMode ?? this.testMode;
-    this.cryptoDigest = cryptoDigest;
+    this.subtleCrypto = subtleCrypto;
   }
 
   /**
@@ -95,7 +95,7 @@ export default class TelemetryDeck {
 
   async _hashedClientUser(clientUser, salt) {
     if (clientUser + salt !== this._clientUserAndSalt) {
-      this._clientUserHashed = await sha256([clientUser, salt].join(''), this.cryptoDigest);
+      this._clientUserHashed = await sha256([clientUser, salt].join(''), this.subtleCrypto);
       this._clientUserAndSalt = clientUser + salt;
     }
 
