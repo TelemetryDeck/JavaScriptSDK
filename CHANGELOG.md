@@ -4,6 +4,17 @@
 
 
 
+
+## v2.0.0 (2023-11-16)
+
+#### :rocket: Enhancement
+* [#23](https://github.com/TelemetryDeck/JavaScriptSDK/pull/23) Standalone SDK: Package for Browser and Node.js ([@pichfl](https://github.com/pichfl))
+
+#### Committers: 3
+- Daniel Jilg ([@winsmith](https://github.com/winsmith))
+- Florian Pichler ([@pichfl](https://github.com/pichfl))
+- Michal Slepko ([@mslepko](https://github.com/mslepko))
+
 ## v1.0.5 (2022-05-27)
 
 #### :rocket: Enhancement
