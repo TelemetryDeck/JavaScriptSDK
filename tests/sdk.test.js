@@ -16,7 +16,9 @@ test.beforeEach((t) => {
   const random = sinon.fake.returns(0.4); // chosen by fair dice roll. guaranteed to be random.
   sinon.replace(Math, 'random', random);
 
-  t.context.cryptoDigest = sinon.fake((_, value) => Promise.resolve(Buffer.from(value)));
+  t.context.subtleCrypto = {
+    digest: sinon.fake((_, value) => Promise.resolve(Buffer.from(value))),
+  };
 });
 
 test.afterEach.always(() => {
@@ -49,12 +51,12 @@ test.serial('Can pass optional user, target and testMode flag', (t) => {
 });
 
 test.serial('Can send a signal', async (t) => {
-  const { fake, cryptoDigest } = t.context;
+  const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck({
     appID: 'foo',
     clientUser: 'anonymous',
-    cryptoDigest,
+    subtleCrypto,
   });
 
   const response = await td.signal('test');
@@ -93,12 +95,12 @@ test.serial("Can't send a signal without a type", async (t) => {
 });
 
 test.serial('Can send additional payload attributes', async (t) => {
-  const { fake, cryptoDigest } = t.context;
+  const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck({
     appID: 'foo',
     clientUser: 'anonymous',
-    cryptoDigest,
+    subtleCrypto,
   });
 
   const response = await td.signal('test', {
@@ -132,13 +134,13 @@ test.serial('Can send additional payload attributes', async (t) => {
 });
 
 test.serial('Can send a signal with salty user', async (t) => {
-  const { fake, cryptoDigest } = t.context;
+  const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck({
     appID: 'foo',
     clientUser: 'anonymous',
     salt: 'salty',
-    cryptoDigest,
+    subtleCrypto,
   });
 
   const response = await td.signal('test');
@@ -165,13 +167,13 @@ test.serial('Can send a signal with salty user', async (t) => {
 });
 
 test.serial('Can send a signal with sessionID', async (t) => {
-  const { fake, cryptoDigest } = t.context;
+  const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck({
     appID: 'foo',
     clientUser: 'anonymous',
     sessionID: '1234567890',
-    cryptoDigest,
+    subtleCrypto,
   });
 
   const response = await td.signal('test');
@@ -200,13 +202,13 @@ test.serial('Can queue signals and send them later', async (t) => {
     advanceTimeDelta: 10,
   });
   const now = new Date();
-  const { fake, cryptoDigest } = t.context;
+  const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck({
     appID: 'foo',
     clientUser: 'anonymous',
     sessionID: '1234567890',
-    cryptoDigest,
+    subtleCrypto,
   });
 
   await td.queue('foo');
@@ -277,13 +279,13 @@ test.serial('Can queue signals and send them later', async (t) => {
 });
 
 test.serial('Can build signal payloads', async (t) => {
-  const { fake, cryptoDigest } = t.context;
+  const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck({
     appID: 'foo',
     clientUser: 'anonymous',
     sessionID: '1234567890',
-    cryptoDigest,
+    subtleCrypto,
   });
 
   const response = await td.signal('test', {
@@ -324,9 +326,7 @@ test.serial('Can build signal payloads', async (t) => {
 
 test.serial('Can find build-in crypto digest', async (t) => {
   globalThis.crypto = {
-    subtle: {
-      digest: t.context.cryptoDigest,
-    },
+    subtle: t.context.subtleCrypto,
   };
 
   const td = new TelemetryDeck({
@@ -335,19 +335,19 @@ test.serial('Can find build-in crypto digest', async (t) => {
   });
 
   await td.signal('test');
-  t.is(t.context.cryptoDigest.callCount, 1);
+  t.is(t.context.subtleCrypto.digest.callCount, 1);
 
   delete globalThis.crypto;
 });
 
 test.serial('Changing the salt also changes the hash', async (t) => {
-  const { fake, cryptoDigest } = t.context;
+  const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck({
     appID: 'foo',
     clientUser: 'anonymous',
     sessionID: '1234567890',
-    cryptoDigest,
+    subtleCrypto,
   });
 
   await td.signal('test');
