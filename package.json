@@ -11,7 +11,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && tsc dist/*.js --declaration --allowJs --emitDeclarationOnly",
     "changelog": "lerna-changelog",
     "lint": "concurrently \"npm:lint:*(!fix)\" --names \"lint:\"",
     "lint:fix": "concurrently \"npm:lint:*:fix\" --names \"fix:\"",
@@ -19,7 +19,7 @@
     "lint:js:fix": "eslint . --fix",
     "lint:md": "prettier --check \"**/*.{html,md,yaml,yml}\"",
     "lint:md:fix": "prettier --write \"**/*.{html,md,yaml,yml}\"",
-    "prepublish": "rollup -c",
+    "prepublish": "rollup -c && tsc dist/*.js --declaration --allowJs --emitDeclarationOnly",
     "release": "dotenv release-it --",
     "test": "ava",
     "test:watch": "ava --watch"
