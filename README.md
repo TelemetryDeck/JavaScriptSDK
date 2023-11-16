@@ -46,7 +46,7 @@ Please install the package using npm or the package manager of your choice
 
 ### 2. Initializing TelemetryDeck
 
-Initialize the TelemetryDeck SDK with your app ID and your user's user identifer. Since `globalThis.crypto.subtle.digest` does not exist in Node.js, you need to pass in an alternative implementation provided by Node.js.
+Initialize the TelemetryDeck SDK with your app ID and your user's user identifer. Since `globalThis.crypto.subtle` does not exist in Node.js, you need to pass in an alternative implementation provided by Node.js.
 
 ```javascript
 import TelemetryDeck from '@telemetrydeck/sdk';
@@ -55,7 +55,7 @@ import crypto from 'crypto';
 const td = new TelemetryDeck({
   appID: '<YOUR_APP_ID>'
   user: '<YOUR_USER_IDENTIFIER>',
-  cryptoDigest: crypto.webcrypto.subtle.digest,
+  subtleCrypto: crypto.webcrypto.subtle,
 });
 ```
 
