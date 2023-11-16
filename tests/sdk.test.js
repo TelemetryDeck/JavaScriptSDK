@@ -4,6 +4,8 @@ import FakeTimers from '@sinonjs/fake-timers';
 
 import TelemetryDeck from '../src/telemetrydeck.js';
 
+const anonymousInHex = Buffer.from('anonymous').toString('hex');
+
 test.beforeEach((t) => {
   const fake = sinon.fake(() => new Response('OK LOL'));
 
@@ -14,9 +16,7 @@ test.beforeEach((t) => {
   const random = sinon.fake.returns(0.4); // chosen by fair dice roll. guaranteed to be random.
   sinon.replace(Math, 'random', random);
 
-  t.context.cryptoDigest = sinon.fake.returns(
-    Promise.resolve(Buffer.from('THIS IS NOT A REAL HASH'))
-  );
+  t.context.cryptoDigest = sinon.fake((_, value) => Promise.resolve(Buffer.from(value)));
 });
 
 test.afterEach.always(() => {
@@ -68,7 +68,7 @@ test.serial('Can send a signal', async (t) => {
     fake.firstCall.args[1].body,
     JSON.stringify([
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex,
         sessionID: '255s0',
         appID: 'foo',
         type: 'test',
@@ -117,7 +117,7 @@ test.serial('Can send additional payload attributes', async (t) => {
     fake.firstCall.args[1].body,
     JSON.stringify([
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex,
         sessionID: '255s0',
         appID: 'foo',
         type: 'test',
@@ -143,6 +143,8 @@ test.serial('Can send a signal with salty user', async (t) => {
 
   const response = await td.signal('test');
 
+  const saltyInHex = Buffer.from('salty').toString('hex');
+
   t.is(await response.text(), 'OK LOL');
   t.is(fake.callCount, 1);
   t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
@@ -152,7 +154,7 @@ test.serial('Can send a signal with salty user', async (t) => {
     fake.firstCall.args[1].body,
     JSON.stringify([
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex + saltyInHex,
         sessionID: '255s0',
         appID: 'foo',
         type: 'test',
@@ -183,7 +185,7 @@ test.serial('Can send a signal with sessionID', async (t) => {
     fake.firstCall.args[1].body,
     JSON.stringify([
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex,
         sessionID: '1234567890',
         appID: 'foo',
         type: 'test',
@@ -213,7 +215,7 @@ test.serial('Can queue signals and send them later', async (t) => {
   t.deepEqual(td.store.values(), [
     {
       appID: 'foo',
-      clientUser: '54484953204953204e4f542041205245414c2048415348',
+      clientUser: anonymousInHex,
       receivedAt: now.toISOString(),
       sessionID: '1234567890',
       telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
@@ -221,7 +223,7 @@ test.serial('Can queue signals and send them later', async (t) => {
     },
     {
       appID: 'foo',
-      clientUser: '54484953204953204e4f542041205245414c2048415348',
+      clientUser: anonymousInHex,
       receivedAt: now.toISOString(),
       sessionID: '1234567890',
       telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
@@ -241,7 +243,7 @@ test.serial('Can queue signals and send them later', async (t) => {
     fake.firstCall.args[1].body,
     JSON.stringify([
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex,
         sessionID: '1234567890',
         appID: 'foo',
         type: 'test',
@@ -253,7 +255,7 @@ test.serial('Can queue signals and send them later', async (t) => {
     fake.secondCall.args[1].body,
     JSON.stringify([
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex,
         sessionID: '1234567890',
         appID: 'foo',
         type: 'foo',
@@ -261,7 +263,7 @@ test.serial('Can queue signals and send them later', async (t) => {
         receivedAt: now.toISOString(),
       },
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex,
         sessionID: '1234567890',
         appID: 'foo',
         type: 'bar',
@@ -302,7 +304,7 @@ test.serial('Can build signal payloads', async (t) => {
     fake.firstCall.args[1].body,
     JSON.stringify([
       {
-        clientUser: '54484953204953204e4f542041205245414c2048415348',
+        clientUser: anonymousInHex,
         sessionID: '1234567890',
         appID: 'foo',
         type: 'test',
@@ -336,4 +338,47 @@ test.serial('Can find build-in crypto digest', async (t) => {
   t.is(t.context.cryptoDigest.callCount, 1);
 
   delete globalThis.crypto;
+});
+
+test.serial('Changing the salt also changes the hash', async (t) => {
+  const { fake, cryptoDigest } = t.context;
+
+  const td = new TelemetryDeck({
+    appID: 'foo',
+    clientUser: 'anonymous',
+    sessionID: '1234567890',
+    cryptoDigest,
+  });
+
+  await td.signal('test');
+  t.is(
+    fake.firstCall.args[1].body,
+    JSON.stringify([
+      {
+        clientUser: anonymousInHex,
+        sessionID: '1234567890',
+        appID: 'foo',
+        type: 'test',
+        telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
+      },
+    ])
+  );
+
+  td.salt = 'salz';
+
+  const salzInHex = Buffer.from('salz').toString('hex');
+
+  await td.signal('test');
+  t.is(
+    fake.secondCall.args[1].body,
+    JSON.stringify([
+      {
+        clientUser: anonymousInHex + salzInHex,
+        sessionID: '1234567890',
+        appID: 'foo',
+        type: 'test',
+        telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
+      },
+    ])
+  );
 });

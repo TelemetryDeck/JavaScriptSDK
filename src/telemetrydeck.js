@@ -39,7 +39,7 @@ export default class TelemetryDeck {
     this.appID = appID;
     this.clientUser = clientUser;
     this.sessionID = sessionID ?? randomString();
-    this.salt = salt;
+    this.salt = salt ?? this.salt;
     this.testMode = testMode ?? this.testMode;
     this.cryptoDigest = cryptoDigest;
   }
@@ -90,16 +90,13 @@ export default class TelemetryDeck {
     return flushPromise;
   }
 
-  _clientUser = '';
+  _clientUserAndSalt = '';
   _clientUserHashed = '';
 
-  async _hashedClientUser(clientUser) {
-    if (clientUser !== this._clientUser) {
-      this._clientUserHashed = await sha256(
-        [this.clientUser, this.salt].join(''),
-        this.cryptoDigest
-      );
-      this._clientUser = this.clientUser;
+  async _hashedClientUser(clientUser, salt) {
+    if (clientUser + salt !== this._clientUserAndSalt) {
+      this._clientUserHashed = await sha256([clientUser, salt].join(''), this.cryptoDigest);
+      this._clientUserAndSalt = clientUser + salt;
     }
 
     return this._clientUserHashed;
@@ -107,10 +104,11 @@ export default class TelemetryDeck {
 
   async _build(type, payload, options, receivedAt) {
     const { appID, testMode } = this;
-    let { clientUser, sessionID } = this;
+    let { clientUser, salt, sessionID } = this;
 
     options = options ?? {};
     clientUser = options.clientUser ?? clientUser;
+    salt = options.salt ?? salt;
     sessionID = options.sessionID ?? sessionID;
 
     if (!type) {
@@ -125,7 +123,7 @@ export default class TelemetryDeck {
       throw new Error(`TelemetryDeck: "clientUser" is not set`);
     }
 
-    clientUser = await this._hashedClientUser(clientUser);
+    clientUser = await this._hashedClientUser(clientUser, salt);
 
     const body = {
       clientUser,
