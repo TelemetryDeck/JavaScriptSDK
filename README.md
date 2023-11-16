@@ -1,126 +1,112 @@
 # Telemetry Deck JavaScript SDK
 
-This package allows you to send signals to [TelemetryDeck](https://telemetrydeck.com) from your JavaScript code.
+This package allows you to send signals to [TelemetryDeck](https://telemetrydeck.com) from JavaScript code.
 
-It has no package dependencies and supports **modern evergreen browsers** which support [cryptography](https://caniuse.com/cryptography).
+TelemetryDeck allows you to capture and analyize users moving through your app and get help deciding how to grow, all without compromising privacy!
 
-Signals sent with this version of the SDK automatically send the following payload items:
+> [!NOTE]  
+> If you want to use TelemetryDeck for your blog or static website, we recommend the [TelemetryDeck Web SDK](https://github.com/TelemetryDeck/WebSDK) instead of this JavaScript SDK.
 
-- `url`
-- `useragent`
-- `locale`
-- `platform`
+# Set Up
 
-You can filter and show these values in the TelemetryDeck dashboard.
+The TelemetryDeck SDK has no dependencies and supports **modern evergreen browsers** and **modern versions of Node.js** with support for [cryptography](https://caniuse.com/cryptography).
 
-Test Mode is currently not supported.
+## Set up in Browser Based Applications that use a bundler (React, Vue, Angular, Svelte, Ember, …)
 
-## Usage
+### 1. Installing the package
 
-### 📄 Usage via Script tag
+Please install the package using npm or the package manager of your choice
 
-For websites and to try out the code quickly, you can use [UNPKG](https://unpkg.com), a free CDN which allows you to load files from any npm package.
+### 2. Initializing TelemetryDeck
 
-Include the following snippet inside the `<head>` of your HTML page:
+Initialize the TelemetryDeck SDK with your app ID and your user's user identifer.
 
-```html
-<script src="https://unpkg.com/@telemetrydeck/sdk/dist/telemetrydeck.min.js" defer></script>
-```
+```javascript
+import TelemetryDeck from '@telemetrydeck/sdk';
 
-Then add a second script tag after it like this to send a signal once every time the page loads:
-
-```html
-<script>
-  window.td = window.td || [];
-  td.push(['app', YOUR_APP_ID], ['user', USER_IDENTIFIER], ['signal']);
-</script>
-```
-
-Please replace `YOUR_APP_ID` with the app ID you received from TelemetryDeck, and `USER_IDENTIFIER` with a user identifier. If you have none, consider `anonymous`.
-
-You can add as many signals as you need to track different interactions with your page. Once the page and script are fully loaded, signals will be sent immediately.
-
-#### Alternative usage for more complex tracking needs
-
-```html
-<script>
-  // Required: queue setup
-  td = window.td || [];
-  // Required: Set your application id
-  td.push(['app', YOUR_APP_ID]);
-  // Required: Set a user idenfitier. `anonymous` is a recommended default
-  td.push(['user', USER_IDENTIFIER ?? 'anonymous']);
-
-  // Custom payload sent with the signal
-  td.push(['signal']);
-  td.push([
-    'signal',
-    {
-      route: 'some/page/path',
-    },
-  ]);
-</script>
-```
-
-### 📦 Advanced usage for applications that use a bundler (like Webpack, Rollup, …)
-
-After installing the package via NPM, use it like this:
-
-```js
-import { TelemetryDeck } from '@telemetrydeck/sdk';
-
-const td = new TelemetryDeck({ app: YOUR_APP_ID, user: YOUR_USER_IDENTIFIER });
-
-// Basic signal
-td.signal();
-
-// Adanced: Signal with custom payload
-td.signal({
-  route: 'some/page/path',
+const td = new TelemetryDeck({
+  appID: '<YOUR_APP_ID>'
+  user: '<YOUR_USER_IDENTIFIER>',
 });
-
 ```
 
-Please replace `YOUR_APP_ID` with the app ID you received from TelemetryDeck. If you have any string that identifies your user, such as an email address, use it as `YOUR_USER_IDENTIFIER` – it will be cryptographically anonymized with a hash function.
+Please replace `<YOUR_APP_ID>` with the app ID in TelemetryDeck ([Dashboard](https://dashboard.telemetrydeck.com) -> App -> Set Up App).
 
-If you want to pass optional parameters to the signal being sent, add them to the optional payload object.
+You also need to identify your logged in user. Instead of `<YOUR_USER_IDENTIFIER>`, pass in any string that uniquely identifies your user, such as an email address. It will be cryptographically anonymized with a hash function.
 
-You can also update your user identifier or queue events like this:
+If can't specify a user identifer at initialization, you can set it later by setting `td.clientUser`.
 
-```js
-// Optional: Update app or user identifier
-td.app(YOUR_NEW_APP_ID);
-td.user(YOUR_NEW_USER_IDENTIFIER);
+Please note that `td.signal` is an async function that returns a promise.
 
-// Optional: Process any events that have been qeued up
-// Queued signals do not contain a client side timestamp and will be timestamped
-// on the server at the time of arrival. Consider adding a timestamp value to
-// your payloads if you need to be able to correlate them.
-const queuedEvents = [
-  ['app', YOUR_APP_ID],
-  ['user', YOUR_USER_IDENTIFIER],
-  ['signal'],
-  ['signal', { route: 'some/page/path' }],
-];
-td.ingest(qeuedEvents);
+## Set up in Node.js Applications
+
+### 1. Installing the package
+
+Please install the package using npm or the package manager of your choice
+
+### 2. Initializing TelemetryDeck
+
+Initialize the TelemetryDeck SDK with your app ID and your user's user identifer. Since `globalThis.crypto.subtle.digest` does not exist in Node.js, you need to pass in an alternative implementation provided by Node.js.
+
+```javascript
+import TelemetryDeck from '@telemetrydeck/sdk';
+import crypto from 'crypto';
+
+const td = new TelemetryDeck({
+  appID: '<YOUR_APP_ID>'
+  user: '<YOUR_USER_IDENTIFIER>',
+  cryptoDigest: crypto.webcrypto.subtle.digest,
+});
 ```
 
-## More Info
+Please replace `<YOUR_APP_ID>` with the app ID in TelemetryDeck ([Dashboard](https://dashboard.telemetrydeck.com) -> App -> Set Up App).
 
-### 📱 You need an App ID
+You also need to identify your logged in user. Instead of `<YOUR_USER_IDENTIFIER>`, pass in any string that uniquely identifies your user, such as an email address. It will be cryptographically anonymized with a hash function.
 
-Every application and website registered to TelemetryDeck has its own unique ID that we use to assign incoming signals to the correct app. To get started, create a new app in the TelemetryDeck UI and copy its ID.
+If can't specify a user identifer at initialization, you can set it later by setting `td.clientUser`.
 
-### 👤 Optional: User Identifiers
+Please note that `td.signal` is an async function that returns a promise.
 
-TelemetryDeck can count users if you assign it a unique identifier for each user that doesn't change. This identifier can be any string that is unique to the user, such as their email address, or a randomly generated UUID.
+> [!NOTE]  
+> If you are using React Native, React Native does not support the `crypto` module, which is required for the SDK to work. We found [react-native-quick-crypto](https://github.com/margelo/react-native-quick-crypto) to be a suitable polyfill. Please note that this is not an officially supported solution.
 
-Feel free to use personally identifiable information as the user identifier: We use a cryptographically secure double-hasing process on client and server to make sure the data that arrives at our servers is anonymized and can not be traced back to individual users via their identifiers. A user's identifier is hashed inside the library, and then salted+hashed again on arrival at the server. This way the data is anonymized as defined by the GDPR and you don't have to ask for user consent for procesing or storing this data.
+## Advanced Initalization Options
 
-### 🚛 Optional: Payload
+See the [source code](./src/telemetrydeck.js#L6-L17) for a full list of availble options acepted by the `TelemetryDeck` constructor.
 
-You can optionally attach an object with string values to the signal. This will allow you to filter and aggregate signal by these values in the dashboard.
+# Sending Signals
 
-### 📚 Full Docs
+Send a basic signal by calling `td.signal()` with a signal type:
 
-Go to [telemetrydeck.com/docs](https://telemetrydeck.com/docs) to see all documentation articles
+```javascript
+td.signal('<SIGNAL_TYPE>');
+```
+
+Send a signal with a custom payload by passing an object as the second argument. The payload's values will be [converted to Strings](./src/tests/store.test.js.js#L278-L310), except for `floatValue`, which can be a Float.
+
+```javascript
+td.signal('Volume.Set', {
+  band: 'Spinal Tap',
+  floatValue: 11.0,
+});
+```
+
+# Advanced: Queueing Signals
+
+The `TelemetryDeck` class comes with a built-in queuing mechanism for storing signals until they are flushed in a single request. Queued signals are sent with `receivedAt` prefilled with the time they were queued.
+
+This uses an in-memory store by default. The store is not persisted between page reloads or app restarts. If you want to persist the store, you can pass a `store` object to the `TelemetryDeck` constructor. The store must implement the following interface:
+
+```javascript
+export class Store {
+  async push() // signal bodys are async and need to be awaited before stored
+  clear() // called after flush
+  values() // returns an array of resolved signal bodys in the order they were pushed
+}
+```
+
+The default implementation can be found in `src/utils/store.js`.
+
+---
+
+[TelemetryDeck](https://telemetrydeck.com?source=github) helps you build better products with live usage data. Try it out for free.

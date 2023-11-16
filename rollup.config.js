@@ -1,42 +1,34 @@
-import json from '@rollup/plugin-json';
-import { terser } from 'rollup-plugin-terser';
+import replace from '@rollup/plugin-replace';
+import fs from 'node:fs';
+
+const package_ = JSON.parse(fs.readFileSync('./package.json'));
+
+const plugins = [
+  replace({
+    values: {
+      __PACKAGE_VERSION__: package_.version,
+    },
+    preventAssignment: true,
+  }),
+];
 
 export default [
   // CommonJS build for Node.js
   {
-    input: 'src/telemetrydeck.mjs',
+    input: 'src/telemetrydeck.js',
     output: {
-      file: 'dist/telemetrydeck.js',
+      file: 'dist/telemetrydeck.cjs',
       format: 'cjs',
     },
-    plugins: [json()],
+    plugins,
   },
-  // ES module build for browsers
+  // ES module build
   {
-    input: 'src/telemetrydeck.mjs',
+    input: 'src/telemetrydeck.js',
     output: {
-      file: 'dist/telemetrydeck.mjs',
-      format: 'module',
+      file: 'dist/telemetrydeck.js',
+      format: 'esm',
     },
-    plugins: [json()],
-  },
-  // minified ES module build
-  {
-    input: 'src/telemetrydeck.mjs',
-    output: {
-      file: 'dist/telemetrydeck.min.mjs',
-      format: 'module',
-    },
-    plugins: [json(), terser()],
-  },
-  // minified UMD build for most browsers
-  {
-    input: 'src/telemetrydeck.mjs',
-    output: {
-      file: 'dist/telemetrydeck.min.js',
-      format: 'umd',
-      name: '@telemetrydeck/sdk',
-    },
-    plugins: [json(), terser()],
+    plugins,
   },
 ];

@@ -1,6 +1,5 @@
-'use strict';
-
-module.exports = {
+export default {
   singleQuote: true,
   printWidth: 100,
+  trailingComma: 'es5',
 };
