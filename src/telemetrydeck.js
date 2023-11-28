@@ -16,6 +16,10 @@ import { version } from './utils/version.js';
  * @property {Function} [subtleCrypto] Used for providing an alternative implementation of SubtleCrypto where no browser is available. Expects a class providing a `.digest(method, value)` method.
  */
 
+/**
+ * @typedef {Object.<string, any>} TelemetryDeckPayload
+ */
+
 export default class TelemetryDeck {
   appID = '';
   clientUser = '';
