@@ -4,6 +4,7 @@
   "description": "Send analytics signals to TelemetryDeck",
   "main": "dist/telemetrydeck.cjs",
   "module": "dist/telemetrydeck.js",
+  "types": "dist/telemetrydeck.d.ts",
   "files": [
     "dist/*",
     "README.md",
