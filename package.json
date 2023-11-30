@@ -1,6 +1,6 @@
 {
   "name": "@telemetrydeck/sdk",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Send analytics signals to TelemetryDeck",
   "main": "dist/telemetrydeck.cjs",
   "module": "dist/telemetrydeck.js",
