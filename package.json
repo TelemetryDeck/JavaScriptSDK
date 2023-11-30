@@ -20,7 +20,7 @@
     "lint:js:fix": "eslint . --fix",
     "lint:md": "prettier --check \"**/*.{html,md,yaml,yml}\"",
     "lint:md:fix": "prettier --write \"**/*.{html,md,yaml,yml}\"",
-    "prepublish": "rollup -c && tsc dist/*.js --declaration --allowJs --emitDeclarationOnly",
+    "prepack": "rollup -c && tsc dist/*.js --declaration --allowJs --emitDeclarationOnly",
     "release": "dotenv release-it --",
     "test": "ava",
     "test:watch": "ava --watch"
