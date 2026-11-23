@@ -19,18 +19,19 @@ Please install the package using npm or the package manager of your choice
 
 ### 2. Initializing TelemetryDeck
 
-Initialize the TelemetryDeck SDK with your app ID and your user's user identifer.
+Initialize the TelemetryDeck SDK with your app ID, your namespace and your user's user identifer.
 
 ```javascript
 import TelemetryDeck from '@telemetrydeck/sdk';
 
 const td = new TelemetryDeck({
-  appID: '<YOUR_APP_ID>'
-  user: '<YOUR_USER_IDENTIFIER>',
+  appID: '<YOUR_APP_ID>',
+  namespace: '<YOUR_NAMESPACE>',
+  clientUser: '<YOUR_USER_IDENTIFIER>',
 });
 ```
 
-Please replace `<YOUR_APP_ID>` with the app ID in TelemetryDeck ([Dashboard](https://dashboard.telemetrydeck.com) -> App -> Set Up App).
+Please replace `<YOUR_APP_ID>` with the app ID in TelemetryDeck ([Dashboard](https://dashboard.telemetrydeck.com) -> App -> Set Up App). Replace `<YOUR_NAMESPACE>` with the namespace of your organization, which the Dashboard also shows.
 
 You also need to identify your logged in user. Instead of `<YOUR_USER_IDENTIFIER>`, pass in any string that uniquely identifies your user, such as an email address. It will be cryptographically anonymized with a hash function.
 
@@ -46,20 +47,21 @@ Please install the package using npm or the package manager of your choice
 
 ### 2. Initializing TelemetryDeck
 
-Initialize the TelemetryDeck SDK with your app ID and your user's user identifer. Since `globalThis.crypto.subtle` does not exist in Node.js, you need to pass in an alternative implementation provided by Node.js.
+Initialize the TelemetryDeck SDK with your app ID, your namespace and your user's user identifer. Since `globalThis.crypto.subtle` does not exist in Node.js, you need to pass in an alternative implementation provided by Node.js.
 
 ```javascript
 import TelemetryDeck from '@telemetrydeck/sdk';
 import crypto from 'crypto';
 
 const td = new TelemetryDeck({
-  appID: '<YOUR_APP_ID>'
-  user: '<YOUR_USER_IDENTIFIER>',
+  appID: '<YOUR_APP_ID>',
+  namespace: '<YOUR_NAMESPACE>',
+  clientUser: '<YOUR_USER_IDENTIFIER>',
   subtleCrypto: crypto.webcrypto.subtle,
 });
 ```
 
-Please replace `<YOUR_APP_ID>` with the app ID in TelemetryDeck ([Dashboard](https://dashboard.telemetrydeck.com) -> App -> Set Up App).
+Please replace `<YOUR_APP_ID>` with the app ID in TelemetryDeck ([Dashboard](https://dashboard.telemetrydeck.com) -> App -> Set Up App). Replace `<YOUR_NAMESPACE>` with the namespace of your organization, which the Dashboard also shows.
 
 You also need to identify your logged in user. Instead of `<YOUR_USER_IDENTIFIER>`, pass in any string that uniquely identifies your user, such as an email address. It will be cryptographically anonymized with a hash function.
 
@@ -72,7 +74,7 @@ Please note that `td.signal` is an async function that returns a promise.
 
 ## Advanced Initalization Options
 
-See the [source code](./src/telemetrydeck.js#L6-L17) for a full list of availble options acepted by the `TelemetryDeck` constructor.
+See the [source code](./src/telemetrydeck.js#L6-L18) for a full list of availble options acepted by the `TelemetryDeck` constructor.
 
 # Sending Signals
 
@@ -82,7 +84,7 @@ Send a basic signal by calling `td.signal()` with a signal type:
 td.signal('<SIGNAL_TYPE>');
 ```
 
-Send a signal with a custom payload by passing an object as the second argument. The payload's values will be [converted to Strings](./src/tests/store.test.js.js#L278-L310), except for `floatValue`, which can be a Float.
+Send a signal with a custom payload by passing an object as the second argument. Strings, numbers and booleans keep their type. Dates become ISO 8601 strings, and objects and arrays become JSON strings. `floatValue` is always sent as a number. Payload keys can contain only letters, digits, dots, underscores and hyphens. The SDK replaces each other character with `_`.
 
 ```javascript
 td.signal('Volume.Set', {
@@ -93,7 +95,7 @@ td.signal('Volume.Set', {
 
 # Advanced: Queueing Signals
 
-The `TelemetryDeck` class comes with a built-in queuing mechanism for storing signals until they are flushed in a single request. Queued signals are sent with `receivedAt` prefilled with the time they were queued.
+The `TelemetryDeck` class comes with a built-in queuing mechanism for storing signals until they are flushed in a single request. Each signal has a `receivedAt` value, which is the time when you called `signal()` or `queue()`.
 
 This uses an in-memory store by default. The store is not persisted between page reloads or app restarts. If you want to persist the store, you can pass a `store` object to the `TelemetryDeck` constructor. The store must implement the following interface:
 
