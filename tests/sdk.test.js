@@ -5,9 +5,33 @@ import FakeTimers from '@sinonjs/fake-timers';
 import TelemetryDeck from '../src/telemetrydeck.js';
 
 const anonymousInHex = Buffer.from('anonymous').toString('hex');
+const url = 'https://nom.telemetrydeck.com/v3/com.example/';
+
+const options = (overrides) => ({
+  appID: 'foo',
+  namespace: 'com.example',
+  clientUser: 'anonymous',
+  sessionID: '1234567890',
+  ...overrides,
+});
+
+const event = (overrides) => ({
+  clientUser: anonymousInHex,
+  sessionID: '1234567890',
+  appID: 'foo',
+  type: 'test',
+  receivedAt: new Date().toISOString(),
+  isTestMode: 'false',
+  'TelemetryDeck.SDK.name': 'JavaScriptSDK',
+  'TelemetryDeck.SDK.version': '__PACKAGE_VERSION__',
+  'TelemetryDeck.SDK.nameAndVersion': 'JavaScriptSDK __PACKAGE_VERSION__',
+  ...overrides,
+});
+
+const sentBody = (call) => JSON.parse(call.args[1].body);
 
 test.beforeEach((t) => {
-  const fake = sinon.fake(() => new Response('OK LOL'));
+  const fake = sinon.fake(() => new Response('1'));
 
   t.context.fake = fake;
 
@@ -19,366 +43,256 @@ test.beforeEach((t) => {
   t.context.subtleCrypto = {
     digest: sinon.fake((_, value) => Promise.resolve(Buffer.from(value))),
   };
+
+  t.context.clock = FakeTimers.install({ toFake: ['Date'] });
 });
 
-test.afterEach.always(() => {
+test.afterEach.always((t) => {
+  t.context.clock.uninstall();
   sinon.restore();
 });
 
 test.serial("Can't instantiate without appID", (t) => {
-  t.throws(
-    () => {
-      new TelemetryDeck({
-        appID: undefined,
-      });
-    },
-    { message: 'appID is required' }
-  );
+  t.throws(() => new TelemetryDeck({ namespace: 'com.example' }), {
+    message: 'appID is required',
+  });
+});
+
+test.serial("Can't instantiate without namespace", (t) => {
+  t.throws(() => new TelemetryDeck({ appID: 'foo' }), { message: 'namespace is required' });
 });
 
 test.serial('Can pass optional user, target and testMode flag', (t) => {
   const td = new TelemetryDeck({
     appID: 'foo',
+    namespace: 'com.example',
     clientUser: 'bar',
     target: 'https://example.com',
     testMode: false,
   });
 
   t.is(td.appID, 'foo');
+  t.is(td.namespace, 'com.example');
   t.is(td.clientUser, 'bar');
   t.is(td.target, 'https://example.com');
   t.is(td.testMode, false);
 });
 
-test.serial('Can send a signal', async (t) => {
+test.serial('Can send an event', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-    subtleCrypto,
-  });
+  const td = new TelemetryDeck(options({ sessionID: undefined, subtleCrypto }));
 
-  const response = await td.signal('test');
+  const response = await td.event('test');
 
-  t.is(await response.text(), 'OK LOL');
+  t.is(await response.text(), '1');
   t.is(fake.callCount, 1);
-  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
+  t.is(fake.firstCall.args[0], url);
   t.is(fake.firstCall.args[1].method, 'POST');
-  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
-  t.is(
-    fake.firstCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex,
-        sessionID: '255s0',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-      },
-    ])
-  );
+  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json; charset=utf-8');
+  t.deepEqual(sentBody(fake.firstCall), [event({ sessionID: '255s0' })]);
 });
 
-test.serial("Can't send a signal without a type", async (t) => {
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-  });
+test.serial('Appends the namespace to a custom target', async (t) => {
+  const { fake, subtleCrypto } = t.context;
 
-  await t.throwsAsync(
-    async () => {
-      await td.signal();
-    },
-    { message: 'TelemetryDeck: "type" is not set' }
-  );
+  const td = new TelemetryDeck(options({ target: 'https://example.com/v3', subtleCrypto }));
+
+  await td.event('test');
+
+  t.is(fake.firstCall.args[0], 'https://example.com/v3/com.example/');
+});
+
+test.serial("Can't send an event without a type", async (t) => {
+  const td = new TelemetryDeck(options());
+
+  await t.throwsAsync(() => td.event(), { message: 'TelemetryDeck: "type" is not set' });
+});
+
+test.serial('Can send an event in test mode', async (t) => {
+  const { fake, subtleCrypto } = t.context;
+
+  const td = new TelemetryDeck(options({ testMode: true, subtleCrypto }));
+
+  await td.event('test');
+
+  t.deepEqual(sentBody(fake.firstCall), [event({ isTestMode: 'true' })]);
 });
 
 test.serial('Can send additional payload attributes', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-    subtleCrypto,
-  });
+  const td = new TelemetryDeck(options({ subtleCrypto }));
 
-  const response = await td.signal('test', {
-    foo: 'bar',
-    blah: '0.1',
-  });
+  await td.event('test', { foo: 'bar', blah: '0.1' });
 
-  const text = await response.text();
-
-  t.is(text, 'OK LOL');
-  t.is(fake.callCount, 1);
-  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
-  t.is(fake.firstCall.args[1].method, 'POST');
-  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
-  t.is(
-    fake.firstCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex,
-        sessionID: '255s0',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        payload: {
-          foo: 'bar',
-          blah: '0.1',
-        },
-      },
-    ])
-  );
+  t.is(fake.firstCall.args[0], url);
+  t.deepEqual(sentBody(fake.firstCall), [event({ foo: 'bar', blah: '0.1' })]);
 });
 
-test.serial('Can send a signal with salty user', async (t) => {
+test.serial('Can send an event with salty user', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-    salt: 'salty',
-    subtleCrypto,
-  });
+  const td = new TelemetryDeck(options({ salt: 'salty', subtleCrypto }));
 
-  const response = await td.signal('test');
+  await td.event('test');
 
   const saltyInHex = Buffer.from('salty').toString('hex');
 
-  t.is(await response.text(), 'OK LOL');
-  t.is(fake.callCount, 1);
-  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
-  t.is(fake.firstCall.args[1].method, 'POST');
-  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
-  t.is(
-    fake.firstCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex + saltyInHex,
-        sessionID: '255s0',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-      },
-    ])
-  );
+  t.deepEqual(sentBody(fake.firstCall), [event({ clientUser: anonymousInHex + saltyInHex })]);
 });
 
-test.serial('Can send a signal with sessionID', async (t) => {
-  const { fake, subtleCrypto } = t.context;
+test.serial('Can queue events and send them later', async (t) => {
+  const { fake, subtleCrypto, clock } = t.context;
 
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-    sessionID: '1234567890',
-    subtleCrypto,
-  });
-
-  const response = await td.signal('test');
-
-  t.is(await response.text(), 'OK LOL');
-  t.is(fake.callCount, 1);
-  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
-  t.is(fake.firstCall.args[1].method, 'POST');
-  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
-  t.is(
-    fake.firstCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex,
-        sessionID: '1234567890',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-      },
-    ])
-  );
-});
-
-test.serial('Can queue signals and send them later', async (t) => {
-  const clock = FakeTimers.install({
-    advanceTimeDelta: 10,
-  });
-  const now = new Date();
-  const { fake, subtleCrypto } = t.context;
-
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-    sessionID: '1234567890',
-    subtleCrypto,
-  });
+  const td = new TelemetryDeck(options({ subtleCrypto }));
 
   await td.queue('foo');
   await td.queue('bar');
 
-  t.deepEqual(td.store.values(), [
-    {
-      appID: 'foo',
-      clientUser: anonymousInHex,
-      receivedAt: now.toISOString(),
-      sessionID: '1234567890',
-      telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
-      type: 'foo',
-    },
-    {
-      appID: 'foo',
-      clientUser: anonymousInHex,
-      receivedAt: now.toISOString(),
-      sessionID: '1234567890',
-      telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
-      type: 'bar',
-    },
-  ]);
+  const queued = [event({ type: 'foo' }), event({ type: 'bar' })];
 
-  const response = await td.signal('test');
+  t.deepEqual(td.store.values(), queued);
+
+  clock.tick(1000);
+
+  await td.event('test');
   await td.flush();
 
-  t.is(await response.text(), 'OK LOL');
   t.is(fake.callCount, 2);
-  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
-  t.is(fake.firstCall.args[1].method, 'POST');
-  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
-  t.is(
-    fake.firstCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex,
-        sessionID: '1234567890',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-      },
-    ])
-  );
-  t.is(
-    fake.secondCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex,
-        sessionID: '1234567890',
-        appID: 'foo',
-        type: 'foo',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        receivedAt: now.toISOString(),
-      },
-      {
-        clientUser: anonymousInHex,
-        sessionID: '1234567890',
-        appID: 'foo',
-        type: 'bar',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        receivedAt: now.toISOString(),
-      },
-    ])
-  );
-
-  clock.uninstall();
+  t.deepEqual(sentBody(fake.firstCall), [event()]);
+  t.deepEqual(sentBody(fake.secondCall), queued);
+  t.deepEqual(td.store.values(), []);
 });
 
-test.serial('Can build signal payloads', async (t) => {
+test.serial('Can build event payloads', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-    sessionID: '1234567890',
-    subtleCrypto,
-  });
+  const td = new TelemetryDeck(options({ subtleCrypto }));
 
-  const response = await td.signal('test', {
+  await td.event('test', {
     floatValue: '0.4',
     dateValue: new Date('2021-01-01T00:00:00.000Z'),
     stringValue: 'foo',
     objectValue: { foo: 'bar' },
     numberValue: 42,
+    booleanValue: true,
     arrayValue: ['foo', 'bar'],
+    'bad key!': 'x',
+    type: 'ignored',
   });
 
-  t.is(await response.text(), 'OK LOL');
-  t.is(fake.callCount, 1);
-  t.is(fake.firstCall.args[0], 'https://nom.telemetrydeck.com/v2/');
-  t.is(fake.firstCall.args[1].method, 'POST');
-  t.is(fake.firstCall.args[1].headers['Content-Type'], 'application/json');
-  t.is(
-    fake.firstCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex,
-        sessionID: '1234567890',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: `JavaScriptSDK __PACKAGE_VERSION__`,
-        payload: {
-          floatValue: 0.4,
-          dateValue: '2021-01-01T00:00:00.000Z',
-          stringValue: 'foo',
-          objectValue: '{"foo":"bar"}',
-          numberValue: '42',
-          arrayValue: '["foo","bar"]',
-        },
-      },
-    ])
-  );
+  t.deepEqual(sentBody(fake.firstCall), [
+    event({
+      floatValue: 0.4,
+      dateValue: '2021-01-01T00:00:00.000Z',
+      stringValue: 'foo',
+      objectValue: '{"foo":"bar"}',
+      numberValue: 42,
+      booleanValue: true,
+      arrayValue: '["foo","bar"]',
+      bad_key_: 'x',
+    }),
+  ]);
 });
 
 test.serial('Can find build-in crypto digest', async (t) => {
-  globalThis.crypto = {
-    subtle: t.context.subtleCrypto,
-  };
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
 
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
+  Object.defineProperty(globalThis, 'crypto', {
+    value: { subtle: t.context.subtleCrypto },
+    configurable: true,
   });
 
-  await td.signal('test');
+  const td = new TelemetryDeck(options());
+
+  await td.event('test');
   t.is(t.context.subtleCrypto.digest.callCount, 1);
 
-  delete globalThis.crypto;
+  if (original) {
+    Object.defineProperty(globalThis, 'crypto', original);
+  } else {
+    delete globalThis.crypto;
+  }
 });
 
 test.serial('Changing the salt also changes the hash', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
-  const td = new TelemetryDeck({
-    appID: 'foo',
-    clientUser: 'anonymous',
-    sessionID: '1234567890',
-    subtleCrypto,
-  });
+  const td = new TelemetryDeck(options({ subtleCrypto }));
 
-  await td.signal('test');
-  t.is(
-    fake.firstCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex,
-        sessionID: '1234567890',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
-      },
-    ])
-  );
+  await td.event('test');
+  t.deepEqual(sentBody(fake.firstCall), [event()]);
 
   td.salt = 'salz';
 
   const salzInHex = Buffer.from('salz').toString('hex');
 
-  await td.signal('test');
-  t.is(
-    fake.secondCall.args[1].body,
-    JSON.stringify([
-      {
-        clientUser: anonymousInHex + salzInHex,
-        sessionID: '1234567890',
-        appID: 'foo',
-        type: 'test',
-        telemetryClientVersion: 'JavaScriptSDK __PACKAGE_VERSION__',
-      },
-    ])
-  );
+  await td.event('test');
+  t.deepEqual(sentBody(fake.secondCall), [event({ clientUser: anonymousInHex + salzInHex })]);
+});
+
+const heartbeat = (name, frequency) =>
+  event({
+    type: 'TelemetryDeck.Session.heartbeat',
+    'TelemetryDeck.Session.Heartbeat.name': name,
+    'TelemetryDeck.Session.Heartbeat.frequency': frequency,
+  });
+
+test.serial('Can start and stop heartbeats', async (t) => {
+  const { fake, subtleCrypto } = t.context;
+
+  t.context.clock.uninstall();
+  const clock = (t.context.clock = FakeTimers.install());
+
+  const td = new TelemetryDeck(options({ subtleCrypto }));
+
+  td.startHeartbeat('minute');
+  td.startHeartbeat('hour', 'Knee Pain App');
+  await clock.tickAsync(0);
+
+  t.is(fake.callCount, 2);
+  t.deepEqual(sentBody(fake.firstCall), [heartbeat('heartbeat', 'minute')]);
+  t.deepEqual(sentBody(fake.secondCall), [heartbeat('Knee Pain App', 'hour')]);
+
+  await clock.tickAsync(60_000);
+
+  t.is(fake.callCount, 3);
+  t.deepEqual(sentBody(fake.thirdCall), [heartbeat('heartbeat', 'minute')]);
+
+  td.stopHeartbeat();
+  await clock.tickAsync(3_540_000);
+
+  t.is(fake.callCount, 4);
+  t.deepEqual(sentBody(fake.lastCall), [heartbeat('Knee Pain App', 'hour')]);
+
+  td.stopHeartbeat('Knee Pain App');
+  await clock.tickAsync(3_600_000);
+
+  t.is(fake.callCount, 4);
+});
+
+test.serial('Starting a heartbeat again replaces the old one', async (t) => {
+  const { fake, subtleCrypto } = t.context;
+
+  t.context.clock.uninstall();
+  const clock = (t.context.clock = FakeTimers.install());
+
+  const td = new TelemetryDeck(options({ subtleCrypto }));
+
+  td.startHeartbeat('minute');
+  td.startHeartbeat('hour');
+  await clock.tickAsync(60_000);
+
+  t.is(fake.callCount, 2);
+
+  td.stopHeartbeat();
+});
+
+test.serial("Can't start a heartbeat with an unknown frequency", (t) => {
+  const td = new TelemetryDeck(options());
+
+  t.throws(() => td.startHeartbeat('fortnight'), {
+    message: 'TelemetryDeck: "frequency" must be "minute", "hour" or "day"',
+  });
 });

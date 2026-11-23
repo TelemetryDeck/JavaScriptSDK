@@ -1,7 +1,7 @@
 {
   "name": "@telemetrydeck/sdk",
   "version": "2.0.4",
-  "description": "Send analytics signals to TelemetryDeck",
+  "description": "Send analytics events to TelemetryDeck",
   "main": "dist/telemetrydeck.cjs",
   "module": "dist/telemetrydeck.js",
   "types": "dist/telemetrydeck.d.ts",
@@ -49,6 +49,7 @@
     "url": "https://github.com/TelemetryDeck/JavaScriptSDK/issues"
   },
   "homepage": "https://telemetrydeck.com/",
+  "packageManager": "pnpm@12.5.1",
   "engines": {
     "node": ">=18"
   },

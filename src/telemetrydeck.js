@@ -3,16 +3,23 @@ import { sha256 } from './utils/sha256.js';
 import { Store } from './utils/store.js';
 import { version } from './utils/version.js';
 
+const HEARTBEAT_INTERVALS = new Map([
+  ['minute', 60_000],
+  ['hour', 3_600_000],
+  ['day', 86_400_000],
+]);
+
 /**
  * @typedef {Object} TelemetryDeckOptions
  *
  * @property {string} appID the app ID to send telemetry data to
+ * @property {string} namespace the namespace of your organization, shown in the TelemetryDeck Dashboard
  * @property {string} clientUser the clientUser ID to send telemetry data to
- * @property {string} [target] the target URL to send telemetry data to
- * @property {string} [sessionID] An optional session ID to include in each signal
+ * @property {string} [target] the base URL to send telemetry data to. The namespace is appended to it.
+ * @property {string} [sessionID] An optional session ID to include in each event
  * @property {string} [salt] A salt to use when hashing the clientUser ID
- * @property {boolean} [testMode] If "true", signals will be marked as test signals and only show up in Test Mode in the Dashbaord
- * @property {Store} [store] A store to use for queueing signals
+ * @property {boolean} [testMode] If "true", events will be marked as test events and only show up in Test Mode in the Dashbaord
+ * @property {Store} [store] A store to use for queueing events
  * @property {Function} [subtleCrypto] Used for providing an alternative implementation of SubtleCrypto where no browser is available. Expects a class providing a `.digest(method, value)` method.
  */
 
@@ -22,9 +29,10 @@ import { version } from './utils/version.js';
 
 export default class TelemetryDeck {
   appID = '';
+  namespace = '';
   clientUser = '';
   salt = '';
-  target = 'https://nom.telemetrydeck.com/v2/';
+  target = 'https://nom.telemetrydeck.com/v3/';
   testMode = false;
 
   /**
@@ -32,15 +40,21 @@ export default class TelemetryDeck {
    * @param {TelemetryDeckOptions} options
    */
   constructor(options = {}) {
-    const { target, appID, clientUser, sessionID, salt, testMode, store, subtleCrypto } = options;
+    const { target, appID, namespace, clientUser, sessionID, salt, testMode, store, subtleCrypto } =
+      options;
 
     if (!appID) {
       throw new Error('appID is required');
     }
 
+    if (!namespace) {
+      throw new Error('namespace is required');
+    }
+
     this.store = store ?? new Store();
     this.target = target ?? this.target;
     this.appID = appID;
+    this.namespace = namespace;
     this.clientUser = clientUser;
     this.sessionID = sessionID ?? randomString();
     this.salt = salt ?? this.salt;
@@ -49,23 +63,23 @@ export default class TelemetryDeck {
   }
 
   /**
-   * Send a TelemetryDeck signal
+   * Send a TelemetryDeck event
    *
    * @param {string} type the type of telemetry data to send
-   * @param {TelemetryDeckPayload} [payload] custom payload to be stored with each signal
+   * @param {TelemetryDeckPayload} [payload] custom payload to be stored with each event
    * @param {TelemetryDeckOptions} [options]
-   * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
+   * @returns <Promise<Response>> a promise with the response from the server. The body is the number of accepted events.
    */
-  async signal(type, payload, options) {
+  async event(type, payload, options) {
     const body = await this._build(type, payload, options);
 
     return this._post([body]);
   }
 
   /**
-   * Enqueue a signal to be sent to TelemetryDeck later.
+   * Enqueue an event to be sent to TelemetryDeck later.
    *
-   * Use flush() to send all queued signals.
+   * Use flush() to send all queued events.
    *
    * @param {string} type
    * @param {TelemetryDeckPayload} [payload]
@@ -73,18 +87,17 @@ export default class TelemetryDeck {
    * @returns <Promise>
    */
   async queue(type, payload, options) {
-    const receivedAt = new Date().toISOString();
-    const bodyPromise = this._build(type, payload, options, receivedAt);
+    const bodyPromise = this._build(type, payload, options);
 
     return this.store.push(bodyPromise);
   }
 
   /**
-   * Send all queued signals to TelemetryDeck.
+   * Send all queued events to TelemetryDeck.
    *
-   * Enqueue signals with queue().
+   * Enqueue events with queue().
    *
-   * @returns <Promise<Response>> a promise with the response from the server, echoing the sent data
+   * @returns <Promise<Response>> a promise with the response from the server. The body is the number of accepted events.
    */
   async flush() {
     const flushPromise = this._post(this.store.values());
@@ -92,6 +105,43 @@ export default class TelemetryDeck {
     this.store.clear();
 
     return flushPromise;
+  }
+
+  _heartbeats = new Map();
+
+  /**
+   * Start sending a heartbeat event now and then once per frequency.
+   *
+   * @param {'minute'|'hour'|'day'} frequency
+   * @param {string} [name]
+   */
+  startHeartbeat(frequency, name = 'heartbeat') {
+    const interval = HEARTBEAT_INTERVALS.get(frequency);
+
+    if (!interval) {
+      throw new Error('TelemetryDeck: "frequency" must be "minute", "hour" or "day"');
+    }
+
+    this.stopHeartbeat(name);
+
+    const send = () =>
+      this.event('TelemetryDeck.Session.heartbeat', {
+        'TelemetryDeck.Session.Heartbeat.name': name,
+        'TelemetryDeck.Session.Heartbeat.frequency': frequency,
+      }).catch(() => {});
+
+    send();
+    this._heartbeats.set(name, setInterval(send, interval));
+  }
+
+  /**
+   * Stop sending the heartbeat with this name.
+   *
+   * @param {string} [name]
+   */
+  stopHeartbeat(name = 'heartbeat') {
+    clearInterval(this._heartbeats.get(name));
+    this._heartbeats.delete(name);
   }
 
   _clientUserAndSalt = '';
@@ -106,7 +156,8 @@ export default class TelemetryDeck {
     return this._clientUserHashed;
   }
 
-  async _build(type, payload, options, receivedAt) {
+  async _build(type, payload, options) {
+    const receivedAt = new Date().toISOString();
     const { appID, testMode } = this;
     let { clientUser, salt, sessionID } = this;
 
@@ -129,57 +180,53 @@ export default class TelemetryDeck {
 
     clientUser = await this._hashedClientUser(clientUser, salt);
 
-    const body = {
+    return {
+      ...this._flatPayload(payload),
       clientUser,
       sessionID,
       appID,
       type,
-      telemetryClientVersion: `JavaScriptSDK ${version}`,
+      receivedAt,
+      isTestMode: testMode ? 'true' : 'false',
+      'TelemetryDeck.SDK.name': 'JavaScriptSDK',
+      'TelemetryDeck.SDK.version': version,
+      'TelemetryDeck.SDK.nameAndVersion': `JavaScriptSDK ${version}`,
     };
-
-    if (receivedAt) {
-      body.receivedAt = receivedAt;
-    }
-
-    if (testMode) {
-      body.isTestMode = true;
-    }
-
-    return this._appendPayload(body, payload);
   }
 
-  _appendPayload(body, payload) {
-    if (!payload || typeof payload !== 'object' || Object.keys(payload).length === 0) {
-      return body;
+  _flatPayload(payload) {
+    const result = {};
+
+    if (!payload || typeof payload !== 'object') {
+      return result;
     }
 
-    body.payload = {};
+    for (const [name, value] of Object.entries(payload)) {
+      // The server rejects the full batch if a key has other characters
+      const key = name.replaceAll(/[^\w.-]/g, '_');
 
-    for (const [key, value] of Object.entries(payload ?? {})) {
       if (key === 'floatValue') {
-        body.payload[key] = Number.parseFloat(value);
+        result[key] = Number.parseFloat(value);
       } else if (value instanceof Date) {
-        body.payload[key] = value.toISOString();
-      } else if (typeof value === 'string') {
-        body.payload[key] = value;
-      } else if (typeof value === 'object') {
-        body.payload[key] = JSON.stringify(value);
+        result[key] = value.toISOString();
+      } else if (value !== null && typeof value === 'object') {
+        result[key] = JSON.stringify(value);
       } else {
-        body.payload[key] = `${value}`;
+        result[key] = value;
       }
     }
 
-    return body;
+    return result;
   }
 
   _post(body) {
-    const { target } = this;
+    const { target, namespace } = this;
 
-    return fetch(target, {
+    return fetch(`${target.replace(/\/+$/, '')}/${namespace}/`, {
       method: 'POST',
       mode: 'cors',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
       },
       body: JSON.stringify(body),
     });
