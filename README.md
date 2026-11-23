@@ -93,6 +93,50 @@ td.event('Volume.Set', {
 });
 ```
 
+# Heartbeats
+
+A heartbeat is a small event that the SDK sends again and again. It shows that the user is still there.
+
+Start a heartbeat with a frequency. The frequency must be `'minute'`, `'hour'` or `'day'`.
+
+```javascript
+td.startHeartbeat('minute');
+```
+
+The SDK sends the first heartbeat event immediately. Then it sends one event each minute, hour or day.
+
+You can give the heartbeat a name. If you do not give a name, the name is `heartbeat`.
+
+```javascript
+td.startHeartbeat('hour', 'Knee Pain App');
+```
+
+Each name has its own heartbeat. If you start heartbeats with different names, the SDK sends one event for each name. If you start a heartbeat with a name that is already in use, the new heartbeat replaces the old one.
+
+Stop a heartbeat with its name. If you do not give a name, the SDK stops the heartbeat with the name `heartbeat`.
+
+```javascript
+td.stopHeartbeat();
+td.stopHeartbeat('Knee Pain App');
+```
+
+A heartbeat event has the type `TelemetryDeck.Session.heartbeat` and these two parameters, together with the fields that each event has:
+
+```json
+{
+  "type": "TelemetryDeck.Session.heartbeat",
+  "TelemetryDeck.Session.Heartbeat.name": "Knee Pain App",
+  "TelemetryDeck.Session.Heartbeat.frequency": "hour"
+}
+```
+
+Obey these rules:
+
+- Set `clientUser` before you start a heartbeat. The SDK cannot send a heartbeat event without it.
+- The SDK does not send a heartbeat event again if the request fails. It does not show an error.
+- A heartbeat stops when the page closes or the app stops. Start it again after each start of the app.
+- In Node.js, a heartbeat keeps the process in operation. Stop all heartbeats before the process must end.
+
 # Advanced: Queueing Events
 
 The `TelemetryDeck` class comes with a built-in queuing mechanism for storing events until they are flushed in a single request. Each event has a `receivedAt` value, which is the time when you called `event()` or `queue()`.

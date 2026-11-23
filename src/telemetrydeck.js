@@ -3,6 +3,12 @@ import { sha256 } from './utils/sha256.js';
 import { Store } from './utils/store.js';
 import { version } from './utils/version.js';
 
+const HEARTBEAT_INTERVALS = new Map([
+  ['minute', 60_000],
+  ['hour', 3_600_000],
+  ['day', 86_400_000],
+]);
+
 /**
  * @typedef {Object} TelemetryDeckOptions
  *
@@ -99,6 +105,43 @@ export default class TelemetryDeck {
     this.store.clear();
 
     return flushPromise;
+  }
+
+  _heartbeats = new Map();
+
+  /**
+   * Start sending a heartbeat event now and then once per frequency.
+   *
+   * @param {'minute'|'hour'|'day'} frequency
+   * @param {string} [name]
+   */
+  startHeartbeat(frequency, name = 'heartbeat') {
+    const interval = HEARTBEAT_INTERVALS.get(frequency);
+
+    if (!interval) {
+      throw new Error('TelemetryDeck: "frequency" must be "minute", "hour" or "day"');
+    }
+
+    this.stopHeartbeat(name);
+
+    const send = () =>
+      this.event('TelemetryDeck.Session.heartbeat', {
+        'TelemetryDeck.Session.Heartbeat.name': name,
+        'TelemetryDeck.Session.Heartbeat.frequency': frequency,
+      }).catch(() => {});
+
+    send();
+    this._heartbeats.set(name, setInterval(send, interval));
+  }
+
+  /**
+   * Stop sending the heartbeat with this name.
+   *
+   * @param {string} [name]
+   */
+  stopHeartbeat(name = 'heartbeat') {
+    clearInterval(this._heartbeats.get(name));
+    this._heartbeats.delete(name);
   }
 
   _clientUserAndSalt = '';

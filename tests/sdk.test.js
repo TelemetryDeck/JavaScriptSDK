@@ -231,3 +231,68 @@ test.serial('Changing the salt also changes the hash', async (t) => {
   await td.event('test');
   t.deepEqual(sentBody(fake.secondCall), [event({ clientUser: anonymousInHex + salzInHex })]);
 });
+
+const heartbeat = (name, frequency) =>
+  event({
+    type: 'TelemetryDeck.Session.heartbeat',
+    'TelemetryDeck.Session.Heartbeat.name': name,
+    'TelemetryDeck.Session.Heartbeat.frequency': frequency,
+  });
+
+test.serial('Can start and stop heartbeats', async (t) => {
+  const { fake, subtleCrypto } = t.context;
+
+  t.context.clock.uninstall();
+  const clock = (t.context.clock = FakeTimers.install());
+
+  const td = new TelemetryDeck(options({ subtleCrypto }));
+
+  td.startHeartbeat('minute');
+  td.startHeartbeat('hour', 'Knee Pain App');
+  await clock.tickAsync(0);
+
+  t.is(fake.callCount, 2);
+  t.deepEqual(sentBody(fake.firstCall), [heartbeat('heartbeat', 'minute')]);
+  t.deepEqual(sentBody(fake.secondCall), [heartbeat('Knee Pain App', 'hour')]);
+
+  await clock.tickAsync(60_000);
+
+  t.is(fake.callCount, 3);
+  t.deepEqual(sentBody(fake.thirdCall), [heartbeat('heartbeat', 'minute')]);
+
+  td.stopHeartbeat();
+  await clock.tickAsync(3_540_000);
+
+  t.is(fake.callCount, 4);
+  t.deepEqual(sentBody(fake.lastCall), [heartbeat('Knee Pain App', 'hour')]);
+
+  td.stopHeartbeat('Knee Pain App');
+  await clock.tickAsync(3_600_000);
+
+  t.is(fake.callCount, 4);
+});
+
+test.serial('Starting a heartbeat again replaces the old one', async (t) => {
+  const { fake, subtleCrypto } = t.context;
+
+  t.context.clock.uninstall();
+  const clock = (t.context.clock = FakeTimers.install());
+
+  const td = new TelemetryDeck(options({ subtleCrypto }));
+
+  td.startHeartbeat('minute');
+  td.startHeartbeat('hour');
+  await clock.tickAsync(60_000);
+
+  t.is(fake.callCount, 2);
+
+  td.stopHeartbeat();
+});
+
+test.serial("Can't start a heartbeat with an unknown frequency", (t) => {
+  const td = new TelemetryDeck(options());
+
+  t.throws(() => td.startHeartbeat('fortnight'), {
+    message: 'TelemetryDeck: "frequency" must be "minute", "hour" or "day"',
+  });
+});
