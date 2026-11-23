@@ -78,12 +78,12 @@ test.serial('Can pass optional user, target and testMode flag', (t) => {
   t.is(td.testMode, false);
 });
 
-test.serial('Can send a signal', async (t) => {
+test.serial('Can send an event', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck(options({ sessionID: undefined, subtleCrypto }));
 
-  const response = await td.signal('test');
+  const response = await td.event('test');
 
   t.is(await response.text(), '1');
   t.is(fake.callCount, 1);
@@ -98,23 +98,23 @@ test.serial('Appends the namespace to a custom target', async (t) => {
 
   const td = new TelemetryDeck(options({ target: 'https://example.com/v3', subtleCrypto }));
 
-  await td.signal('test');
+  await td.event('test');
 
   t.is(fake.firstCall.args[0], 'https://example.com/v3/com.example/');
 });
 
-test.serial("Can't send a signal without a type", async (t) => {
+test.serial("Can't send an event without a type", async (t) => {
   const td = new TelemetryDeck(options());
 
-  await t.throwsAsync(() => td.signal(), { message: 'TelemetryDeck: "type" is not set' });
+  await t.throwsAsync(() => td.event(), { message: 'TelemetryDeck: "type" is not set' });
 });
 
-test.serial('Can send a signal in test mode', async (t) => {
+test.serial('Can send an event in test mode', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck(options({ testMode: true, subtleCrypto }));
 
-  await td.signal('test');
+  await td.event('test');
 
   t.deepEqual(sentBody(fake.firstCall), [event({ isTestMode: 'true' })]);
 });
@@ -124,25 +124,25 @@ test.serial('Can send additional payload attributes', async (t) => {
 
   const td = new TelemetryDeck(options({ subtleCrypto }));
 
-  await td.signal('test', { foo: 'bar', blah: '0.1' });
+  await td.event('test', { foo: 'bar', blah: '0.1' });
 
   t.is(fake.firstCall.args[0], url);
   t.deepEqual(sentBody(fake.firstCall), [event({ foo: 'bar', blah: '0.1' })]);
 });
 
-test.serial('Can send a signal with salty user', async (t) => {
+test.serial('Can send an event with salty user', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck(options({ salt: 'salty', subtleCrypto }));
 
-  await td.signal('test');
+  await td.event('test');
 
   const saltyInHex = Buffer.from('salty').toString('hex');
 
   t.deepEqual(sentBody(fake.firstCall), [event({ clientUser: anonymousInHex + saltyInHex })]);
 });
 
-test.serial('Can queue signals and send them later', async (t) => {
+test.serial('Can queue events and send them later', async (t) => {
   const { fake, subtleCrypto, clock } = t.context;
 
   const td = new TelemetryDeck(options({ subtleCrypto }));
@@ -156,7 +156,7 @@ test.serial('Can queue signals and send them later', async (t) => {
 
   clock.tick(1000);
 
-  await td.signal('test');
+  await td.event('test');
   await td.flush();
 
   t.is(fake.callCount, 2);
@@ -165,12 +165,12 @@ test.serial('Can queue signals and send them later', async (t) => {
   t.deepEqual(td.store.values(), []);
 });
 
-test.serial('Can build signal payloads', async (t) => {
+test.serial('Can build event payloads', async (t) => {
   const { fake, subtleCrypto } = t.context;
 
   const td = new TelemetryDeck(options({ subtleCrypto }));
 
-  await td.signal('test', {
+  await td.event('test', {
     floatValue: '0.4',
     dateValue: new Date('2021-01-01T00:00:00.000Z'),
     stringValue: 'foo',
@@ -206,7 +206,7 @@ test.serial('Can find build-in crypto digest', async (t) => {
 
   const td = new TelemetryDeck(options());
 
-  await td.signal('test');
+  await td.event('test');
   t.is(t.context.subtleCrypto.digest.callCount, 1);
 
   if (original) {
@@ -221,13 +221,13 @@ test.serial('Changing the salt also changes the hash', async (t) => {
 
   const td = new TelemetryDeck(options({ subtleCrypto }));
 
-  await td.signal('test');
+  await td.event('test');
   t.deepEqual(sentBody(fake.firstCall), [event()]);
 
   td.salt = 'salz';
 
   const salzInHex = Buffer.from('salz').toString('hex');
 
-  await td.signal('test');
+  await td.event('test');
   t.deepEqual(sentBody(fake.secondCall), [event({ clientUser: anonymousInHex + salzInHex })]);
 });

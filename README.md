@@ -1,6 +1,6 @@
 # Telemetry Deck JavaScript SDK
 
-This package allows you to send signals to [TelemetryDeck](https://telemetrydeck.com) from JavaScript code.
+This package allows you to send events to [TelemetryDeck](https://telemetrydeck.com) from JavaScript code.
 
 TelemetryDeck allows you to capture and analyize users moving through your app and get help deciding how to grow, all without compromising privacy!
 
@@ -37,7 +37,7 @@ You also need to identify your logged in user. Instead of `<YOUR_USER_IDENTIFIER
 
 If can't specify a user identifer at initialization, you can set it later by setting `td.clientUser`.
 
-Please note that `td.signal` is an async function that returns a promise.
+Please note that `td.event` is an async function that returns a promise.
 
 ## Set up in Node.js Applications
 
@@ -67,7 +67,7 @@ You also need to identify your logged in user. Instead of `<YOUR_USER_IDENTIFIER
 
 If can't specify a user identifer at initialization, you can set it later by setting `td.clientUser`.
 
-Please note that `td.signal` is an async function that returns a promise.
+Please note that `td.event` is an async function that returns a promise.
 
 > [!NOTE]  
 > If you are using React Native, React Native does not support the `crypto` module, which is required for the SDK to work. We found [react-native-quick-crypto](https://github.com/margelo/react-native-quick-crypto) to be a suitable polyfill. Please note that this is not an officially supported solution.
@@ -76,34 +76,34 @@ Please note that `td.signal` is an async function that returns a promise.
 
 See the [source code](./src/telemetrydeck.js#L6-L18) for a full list of availble options acepted by the `TelemetryDeck` constructor.
 
-# Sending Signals
+# Sending Events
 
-Send a basic signal by calling `td.signal()` with a signal type:
+Send a basic event by calling `td.event()` with an event type:
 
 ```javascript
-td.signal('<SIGNAL_TYPE>');
+td.event('<EVENT_TYPE>');
 ```
 
-Send a signal with a custom payload by passing an object as the second argument. Strings, numbers and booleans keep their type. Dates become ISO 8601 strings, and objects and arrays become JSON strings. `floatValue` is always sent as a number. Payload keys can contain only letters, digits, dots, underscores and hyphens. The SDK replaces each other character with `_`.
+Send an event with a custom payload by passing an object as the second argument. Strings, numbers and booleans keep their type. Dates become ISO 8601 strings, and objects and arrays become JSON strings. `floatValue` is always sent as a number. Payload keys can contain only letters, digits, dots, underscores and hyphens. The SDK replaces each other character with `_`.
 
 ```javascript
-td.signal('Volume.Set', {
+td.event('Volume.Set', {
   band: 'Spinal Tap',
   floatValue: 11.0,
 });
 ```
 
-# Advanced: Queueing Signals
+# Advanced: Queueing Events
 
-The `TelemetryDeck` class comes with a built-in queuing mechanism for storing signals until they are flushed in a single request. Each signal has a `receivedAt` value, which is the time when you called `signal()` or `queue()`.
+The `TelemetryDeck` class comes with a built-in queuing mechanism for storing events until they are flushed in a single request. Each event has a `receivedAt` value, which is the time when you called `event()` or `queue()`.
 
 This uses an in-memory store by default. The store is not persisted between page reloads or app restarts. If you want to persist the store, you can pass a `store` object to the `TelemetryDeck` constructor. The store must implement the following interface:
 
 ```javascript
 export class Store {
-  async push() // signal bodys are async and need to be awaited before stored
+  async push() // event bodys are async and need to be awaited before stored
   clear() // called after flush
-  values() // returns an array of resolved signal bodys in the order they were pushed
+  values() // returns an array of resolved event bodys in the order they were pushed
 }
 ```
 

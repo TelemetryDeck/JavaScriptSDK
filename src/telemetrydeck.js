@@ -10,10 +10,10 @@ import { version } from './utils/version.js';
  * @property {string} namespace the namespace of your organization, shown in the TelemetryDeck Dashboard
  * @property {string} clientUser the clientUser ID to send telemetry data to
  * @property {string} [target] the base URL to send telemetry data to. The namespace is appended to it.
- * @property {string} [sessionID] An optional session ID to include in each signal
+ * @property {string} [sessionID] An optional session ID to include in each event
  * @property {string} [salt] A salt to use when hashing the clientUser ID
- * @property {boolean} [testMode] If "true", signals will be marked as test signals and only show up in Test Mode in the Dashbaord
- * @property {Store} [store] A store to use for queueing signals
+ * @property {boolean} [testMode] If "true", events will be marked as test events and only show up in Test Mode in the Dashbaord
+ * @property {Store} [store] A store to use for queueing events
  * @property {Function} [subtleCrypto] Used for providing an alternative implementation of SubtleCrypto where no browser is available. Expects a class providing a `.digest(method, value)` method.
  */
 
@@ -57,23 +57,23 @@ export default class TelemetryDeck {
   }
 
   /**
-   * Send a TelemetryDeck signal
+   * Send a TelemetryDeck event
    *
    * @param {string} type the type of telemetry data to send
-   * @param {TelemetryDeckPayload} [payload] custom payload to be stored with each signal
+   * @param {TelemetryDeckPayload} [payload] custom payload to be stored with each event
    * @param {TelemetryDeckOptions} [options]
-   * @returns <Promise<Response>> a promise with the response from the server. The body is the number of accepted signals.
+   * @returns <Promise<Response>> a promise with the response from the server. The body is the number of accepted events.
    */
-  async signal(type, payload, options) {
+  async event(type, payload, options) {
     const body = await this._build(type, payload, options);
 
     return this._post([body]);
   }
 
   /**
-   * Enqueue a signal to be sent to TelemetryDeck later.
+   * Enqueue an event to be sent to TelemetryDeck later.
    *
-   * Use flush() to send all queued signals.
+   * Use flush() to send all queued events.
    *
    * @param {string} type
    * @param {TelemetryDeckPayload} [payload]
@@ -87,11 +87,11 @@ export default class TelemetryDeck {
   }
 
   /**
-   * Send all queued signals to TelemetryDeck.
+   * Send all queued events to TelemetryDeck.
    *
-   * Enqueue signals with queue().
+   * Enqueue events with queue().
    *
-   * @returns <Promise<Response>> a promise with the response from the server. The body is the number of accepted signals.
+   * @returns <Promise<Response>> a promise with the response from the server. The body is the number of accepted events.
    */
   async flush() {
     const flushPromise = this._post(this.store.values());
