@@ -49,6 +49,7 @@
     "url": "https://github.com/TelemetryDeck/JavaScriptSDK/issues"
   },
   "homepage": "https://telemetrydeck.com/",
+  "packageManager": "pnpm@12.5.1",
   "engines": {
     "node": ">=18"
   },
